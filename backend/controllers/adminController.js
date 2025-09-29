@@ -3,6 +3,10 @@ const Surety = require('../models/Surety');
 const bcrypt = require('bcryptjs');
 const xlsx = require('xlsx');
 
+// ---------------------------------------------------------------- //
+// ---------------------------- USER LOGIC -------------------------- //
+// ---------------------------------------------------------------- //
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find({ role: 'user' });
@@ -46,7 +50,7 @@ exports.updateUser = async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(dob, salt);
     }
-    
+
     await user.save();
     res.json({ msg: 'User updated successfully' });
   } catch (err) {
@@ -101,6 +105,10 @@ exports.importUsersFromExcel = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------- //
+// --------------------------- SURETY LOGIC ------------------------- //
+// ---------------------------------------------------------------- //
+
 exports.getAllSureties = async (req, res) => {
   try {
     const sureties = await Surety.find().populate('assignedToUser', 'fullName mobileNo');
@@ -110,12 +118,48 @@ exports.getAllSureties = async (req, res) => {
   }
 };
 
+// **ADDED: Function to create a new Surety (similar to createUser)**
+exports.createSurety = async (req, res) => {
+  const { shurityName, address, aadharNo, policeStation, caseFirNo, actName, section, accusedName, accusedAddress, shurityAmount, shurityDate, courtCity, assignedToUser } = req.body;
+  try {
+    // Check for existing surety by Aadhar
+    let exists = await Surety.findOne({ aadharNo });
+    if (exists) return res.status(400).json({ msg: 'Surety with this Aadhar number already exists' });
+    
+    // Determine the user to assign this to (could be the authenticated user or an admin ID)
+    const userToAssignId = assignedToUser || req.user?.id; // Assuming req.user is available for authenticated API
+
+    const newSurety = new Surety({
+      shurityName,
+      address,
+      aadharNo,
+      policeStation,
+      caseFirNo,
+      actName,
+      section,
+      accusedName,
+      accusedAddress,
+      shurityAmount,    // <<-- ADDED
+      shurityDate,      // <<-- ADDED
+      courtCity,
+      assignedToUser: userToAssignId, 
+    });
+
+    await newSurety.save();
+    res.status(201).json({ msg: 'Surety created successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: 'Server error during surety creation' });
+  }
+};
+
+// **UPDATED: Added shurityAmount and shurityDate to updateSurety**
 exports.updateSurety = async (req, res) => {
-  const { shurityName, address, aadharNo, policeStation, caseFirNo, actName, section, accusedName, accusedAddress } = req.body;
+  const { shurityName, address, aadharNo, policeStation, caseFirNo, actName, section, accusedName, accusedAddress, shurityAmount, shurityDate } = req.body;
   try {
     const surety = await Surety.findById(req.params.id);
     if (!surety) return res.status(404).json({ msg: 'Surety record not found' });
-    
+
     surety.shurityName = shurityName || surety.shurityName;
     surety.address = address || surety.address;
     surety.aadharNo = aadharNo || surety.aadharNo;
@@ -125,6 +169,8 @@ exports.updateSurety = async (req, res) => {
     surety.section = section || surety.section;
     surety.accusedName = accusedName || surety.accusedName;
     surety.accusedAddress = accusedAddress || surety.accusedAddress;
+    surety.shurityAmount = shurityAmount || surety.shurityAmount; // <<-- ADDED
+    surety.shurityDate = shurityDate || surety.shurityDate;     // <<-- ADDED
 
     await surety.save();
     res.json({ msg: 'Surety record updated successfully' });
@@ -143,22 +189,26 @@ exports.deleteSurety = async (req, res) => {
   }
 };
 
+// **UPDATED: Added shurityAmount and shurityDate to importSuretiesFromExcel**
 exports.importSuretiesFromExcel = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ msg: "No file uploaded" });
     }
 
-    // Ensure default user exists
+    // Ensure default user exists and HASH the password
     let userToAssign = await User.findOne({ mobileNo: "9999999999" });
     if (!userToAssign) {
+      const salt = await bcrypt.genSalt(10);
+      const password = await bcrypt.hash("2000-01-01", salt); 
+
       userToAssign = await User.create({
         fullName: "Default Admin",
         dob: "2000-01-01",
         mobileNo: "9999999999",
         village: "Default",
         emailId: "default@example.com",
-        password: "123456", // ⚠️ hash in production
+        password: password, // Use hashed password
       });
     }
 
@@ -183,7 +233,13 @@ exports.importSuretiesFromExcel = async (req, res) => {
       const accusedAddress = row["Accused Address"] || row.accusedAddress;
       const courtCity = row.courtCity || row["Court City"];
 
-      if (!aadharNo || !shurityName || !address || !policeStation || !caseFirNo || !actName || !section || !accusedName || !accusedAddress || !courtCity) {
+      // <<-- ADDED NEW IMPORT FIELDS -->>
+      const shurityAmount = row["Surety Amount"] || row.shurityAmount;
+      const shurityDate = row["Surety Date"] || row.shurityDate;
+      // <<----------------------------->>
+
+      // Check for required fields, including the new ones
+      if (!aadharNo || !shurityName || !address || !policeStation || !caseFirNo || !actName || !section || !accusedName || !accusedAddress || !courtCity || !shurityAmount || !shurityDate) {
         continue; // skip incomplete rows
       }
 
@@ -208,6 +264,8 @@ exports.importSuretiesFromExcel = async (req, res) => {
         accusedName,
         accusedAddress,
         courtCity,
+        shurityAmount, // <<-- ADDED
+        shurityDate,   // <<-- ADDED
         assignedToUser: userToAssign._id,
       });
 
@@ -243,4 +301,3 @@ exports.importSuretiesFromExcel = async (req, res) => {
     res.status(500).json({ msg: "Server error during surety import" });
   }
 };
-

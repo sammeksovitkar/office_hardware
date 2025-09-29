@@ -1,17 +1,29 @@
 const mongoose = require('mongoose');
 
 const SuretySchema = new mongoose.Schema({
-  shurityName: { type: String, required: true },
-  address: { type: String, required: true },
-  aadharNo: { type: String, required: true },
-  policeStation: { type: String, required: true },
-  caseFirNo: { type: String, required: true },
-  actName: { type: String, required: true },
-  section: { type: String, required: true },
-  accusedName: { type: String, required: true },
-  accusedAddress: { type: String, required: true },
-  assignedToUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  courtCity: { type: String, required: true },
-}, { timestamps: true });
+    shurityName: { type: String, required: true },
+    address: { type: String },
+    aadharNo: { type: String, unique: true },
+    policeStation: { type: String },
+    caseFirNo: { type: String, unique: true },
+    actName: { type: String },
+    section: { type: String },
+    accusedName: { type: String },
+    accusedAddress: { type: String },
+
+    // --- NEW FIELDS ADDED HERE ---
+    shurityAmount: { 
+        type: Number, 
+        required: true // Store the amount as a number
+    },
+    dateOfSurety: { 
+        type: Date, 
+        default: Date.now // Store the date, defaults to current date if not provided
+    },
+    // -----------------------------
+    
+    assignedToUser: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    courtCity: { type: String },
+});
 
 module.exports = mongoose.model('Surety', SuretySchema);
