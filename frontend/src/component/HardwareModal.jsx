@@ -1,14 +1,25 @@
-import React from 'react';
-import { FaPlus, FaTimesCircle, FaDesktop, FaTrashAlt, FaBuilding } from 'react-icons/fa'; // Added FaBuilding for company
-import { MdNumbers, MdAddBox } from 'react-icons/md';
+import React, { useState, useCallback, useMemo } from 'react'; // ADDED useState, useCallback, useMemo
+import { FaPlus, FaTimesCircle, FaDesktop, FaTrashAlt, FaBuilding } from 'react-icons/fa';
+import { MdNumbers, MdAddBox, MdFactory } from 'react-icons/md'; // Imported MdFactory
 import CoreMetadataForm from './CoreMetadataForm'; // Import the metadata component
 
-// --- Constants (Re-defined for context, usually imported) ---
+// --- Constants (Re-defined for context) ---
 const HARDWARE_OPTIONS = [
     'CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'
 ];
 
-// --- Utility Components (Re-defined for context, usually imported) ---
+const MANUFACTURER_OPTIONS = [
+    "DELL", 
+    "HP", 
+    "SAMSUNG", 
+    "KYOCRA",
+    "CANON",
+    "FUJITSU",
+    "LENOVO", 
+    "EPSON"   
+];
+
+// --- Utility Components (Re-defined for context) ---
 const FormInput = ({ label, id, name, value, onChange, type = 'text', required = false, error, children, icon: Icon }) => (
     <div className="flex flex-col mb-2"> 
         <label htmlFor={id} className="text-xs font-medium text-gray-700 flex items-center mb-0.5"> 
@@ -32,13 +43,84 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
     </div>
 );
 
+// NEW COMPONENT: Manufacturer Selector with Custom Auto-Suggest Logic (FINAL FIX)
+const ManufacturerSelector = React.memo(({ index, value, onChange, required }) => {
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const handleManufacturerChange = (e) => {
+        onChange(index, e);
+        setShowSuggestions(true);
+    };
+
+    // Callback to set the value and hide the suggestions
+    const selectManufacturer = useCallback((manufacturer) => {
+        const syntheticEvent = { target: { name: 'company', value: manufacturer } };
+        onChange(index, syntheticEvent);
+        setShowSuggestions(false);
+    }, [index, onChange]);
+
+    // Memoize the filtered list to avoid re-calculating on every render
+    const filteredManufacturers = useMemo(() => {
+        return MANUFACTURER_OPTIONS.filter(option =>
+            option.toLowerCase().includes(value?.toLowerCase() || '')
+        );
+    }, [value]);
+
+    return (
+        <div className="flex flex-col mb-2"> 
+            <label htmlFor={`company-${index}`} className="text-xs font-medium text-gray-700 flex items-center mb-0.5"> 
+                <MdFactory className="mr-2 text-indigo-500 text-sm" />
+                Company/Manufacturer {required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="relative">
+                <input 
+                    type="text" 
+                    id={`company-${index}`} 
+                    name="company" 
+                    value={value || ''} 
+                    onChange={handleManufacturerChange}
+                    onFocus={() => setShowSuggestions(true)}
+                    // Use a slight delay on blur to allow the suggestion's onMouseDown event to fire first
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)} 
+                    required={required}
+                    placeholder="Select or type manufacturer..."
+                    className="w-full p-1.5 border border-gray-300 rounded-md transition-all duration-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm"
+                    autoComplete="off"
+                />
+                
+                {showSuggestions && (filteredManufacturers.length > 0 || value) && (
+                    <ul className="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto mt-0.5">
+                        {filteredManufacturers.length > 0 ? (
+                            filteredManufacturers.map(option => (
+                                <li 
+                                    key={option} 
+                                    // CRITICAL FIX: Use onMouseDown and preventDefault to stop the blur event from firing and hiding the list prematurely.
+                                    onMouseDown={(e) => {
+                                        e.preventDefault(); 
+                                        selectManufacturer(option);
+                                    }}
+                                    className="px-3 py-1 text-sm cursor-pointer hover:bg-indigo-100 transition-colors duration-150"
+                                >
+                                    {option}
+                                </li>
+                            ))
+                        ) : (
+                            <li className="px-3 py-1 text-sm text-gray-500 italic">
+                                Type custom manufacturer name.
+                            </li>
+                        )}
+                    </ul>
+                )}
+            </div>
+        </div>
+    );
+});
+
+
 const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
-    console.log(item,"item")
-    // Note: Assuming the state field for hardware type selection is 'hardwareName'
     const isOther = item.hardwareName === 'Other';
     
     return (
-        // Changed to use flex-wrap on smaller screens for better layout
         <div className="flex flex-wrap md:flex-nowrap gap-2 mb-3 items-end bg-white p-3 rounded-lg shadow-md border border-gray-100">
             
             {/* Hardware Name Selector */}
@@ -61,12 +143,11 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
 
             {/* Manual Hardware Name Input (if 'Other' is selected) */}
             {isOther && (
-                // Occupies a flexible space when visible
                 <div className="w-full sm:w-1/2 md:flex-1">
                     <FormInput 
                         label="Specify Hardware" 
                         id={`manualName-${index}`} 
-                        name="manualHardwareName" // This name might need to be adjusted to 'hardwareType' if you only want one field in final state
+                        name="manualHardwareName"
                         value={item.manualHardwareName || ''} 
                         onChange={(e) => onChange(index, e)} 
                         required={isOther}
@@ -80,7 +161,7 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
                 <FormInput 
                     label="Serial Number" 
                     id={`serialNumber-${index}`} 
-                    name="serialNumber" // Use 'serialNo' if matching Mongoose schema strictly
+                    name="serialNumber"
                     value={item.serialNumber || ''} 
                     onChange={(e) => onChange(index, e)} 
                     required 
@@ -89,16 +170,13 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
                 />
             </div>
             
-            {/* Company/Manufacturer Input (NEWLY ADDED) */}
+            {/* Company/Manufacturer Input (CUSTOM SELECTOR) */}
             <div className="w-full sm:w-1/2 md:flex-1">
-                <FormInput 
-                    label="Company/Manufacturer" 
-                    id={`company-${index}`} 
-                    name="company" // Name matches Mongoose schema
-                    value={item.company || ''} 
-                    onChange={(e) => onChange(index, e)} 
-                    required 
-                    icon={FaBuilding}
+                <ManufacturerSelector 
+                    index={index}
+                    value={item.company}
+                    onChange={onChange}
+                    required={true}
                 />
             </div>
 
@@ -106,7 +184,6 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
             <button
                 type="button"
                 onClick={() => onRemove(index)}
-                // Added a fixed width/height for consistent alignment
                 className="p-2.5 w-10 h-[38px] bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors self-end flex items-center justify-center"
                 title="Remove Item"
             >
@@ -117,7 +194,7 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
 };
 // --- End Utility Components ---
 
-const HardwareModal = ({ 
+const HardwareModal = ({ user,
     formData, 
     handleMainFormChange, 
     handleHardwareItemChange, 
@@ -166,7 +243,7 @@ const HardwareModal = ({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
                         
                         {/* Column 1: Core Metadata (NEW COMPONENT) */}
-                        <CoreMetadataForm 
+                        <CoreMetadataForm user={user}
                             formData={formData}
                             handleMainFormChange={handleMainFormChange}
                         />
