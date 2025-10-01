@@ -1,107 +1,278 @@
-const Hardware = require('../models/Hardware'); // Assuming the Hardware model is here
+const Hardware = require('../models/Hardware'); 
 const User = require('../models/User');
+const mongoose = require('mongoose'); 
 
-/**
- * @route POST /api/hardware
- * @desc Create a new Hardware record
- * @access Private (Requires authentication/user ID)
- */
-/**
- * @route POST /api/hardware
- * @desc Create a new Hardware record
- * @access Private (Requires authentication/user ID)
- */
+// =========================================================
+// 🔥 HELPER FUNCTION: DATE PARSING (MUST BE DEFINED)
+// This fixes the DD/MM/YYYY and other string formats.
+// =========================================================
+const safeDate = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return null;
+
+    // Check for YYYY-MM-DD format (often sent from frontend after parsing Excel)
+    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const date = new Date(dateString);
+        return isNaN(date.getTime()) ? null : date;
+    }
+
+    // Regex to match DD/MM/YYYY or DD-MM-YYYY
+    const dateParts = dateString.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
+
+    if (dateParts) {
+        // Note: JavaScript Date constructor is year, month-1, day
+        const day = parseInt(dateParts[1], 10);
+        const month = parseInt(dateParts[2], 10) - 1; // Month is 0-indexed
+        const year = parseInt(dateParts[3], 10);
+        
+        const date = new Date(year, month, day);
+
+        // Final check to see if the date is valid
+        if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+            return date;
+        }
+    }
+    
+    // Fallback attempt for other formats if custom parsing fails
+    const genericDate = new Date(dateString);
+    return isNaN(genericDate.getTime()) ? null : genericDate;
+};
+
+
+// =========================================================
+// 🔥 CREATE HARDWARE (FIXED FOR employeeAllocated)
+// =========================================================
 exports.createHardware = async (req, res) => {
-    // 1. Destructure the payload: Get the 'hardwareItems' array and other fields
-    const { hardwareItems, ...otherBodyFields } = req.body;
-    const userId = req.user.id;
+    const { 
+        employeeAllocated, // The name (string) sent from the frontend
+        hardwareItems,
+        ...restOfBody
+    } = req.body;
+
+    // Use req.user.id for the user who is logged in (admin/creator)
+    const userId = req.user.id; 
+    
+    // 1. Define the ID variable first (Crucial to avoid "employeeId is not defined" error)
+    let employeeId = null;
+
+    // 2. Perform the Name-to-ID Lookup (Robust, case-insensitive fix)
+    if (employeeAllocated && typeof employeeAllocated === 'string' && employeeAllocated.length > 0) {
+        try {
+            // Using the robust case-insensitive lookup
+            const allocatedUser = await User.findOne({ 
+                // Uses regex for flexible search, ignoring case ('i')
+                fullName: { $regex: new RegExp(`^${employeeAllocated}$`, 'i') } 
+            }).select('_id');
+            
+            // Assign the ID if the user was found
+            employeeId = allocatedUser ? allocatedUser._id : null;
+        } catch (lookupErr) {
+            console.error('User lookup failed during manual create:', lookupErr.message);
+            // employeeId remains null, which is safe for the DB save
+        }
+    }
+    
+    // 3. Map Hardware Items
+    const mappedItems = hardwareItems.map(item => ({
+        itemName: item.hardwareName,
+        serialNo: item.serialNumber,
+        company: item.company 
+        // Ensure all required item fields are mapped here
+    }));
+    
+    // 4. Prepare the final document for save
+    const newHardware = new Hardware({
+        ...restOfBody,             // Spread other simple fields
+        items: mappedItems,        // The items array
+        user: userId,              // The creator ID
+        
+        // This is the variable that must be defined (employeeId is now defined as an ID or null)
+        employeeAllocated: employeeId, 
+
+        // CRITICAL: Apply safeDate to all string date fields
+        deliveryDate: safeDate(restOfBody.deliveryDate),
+        installationDate: safeDate(restOfBody.installationDate),
+    });
 
     try {
-        const user = await User.findById(userId);
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-
-        // --- 2. Map Payload Structure to Schema Structure (CORRECTED) ---
-        // employeeAllocated is NOT included in the item mapping.
-        const mappedItems = hardwareItems.map(item => ({
-            itemName: item.hardwareName === 'Other' ? item.manualHardwareName : item.hardwareName, // Ensure manual input is used if 'Other' is selected
-            serialNo: item.serialNumber,
-            company: item.company 
-        }));
-        
-
-        // --- 3. Create the New Hardware Record (CLEANED) ---
-        const newHardware = new Hardware({
-            ...otherBodyFields, // This correctly brings in employeeAllocated
-            items: mappedItems, 
-            user: userId,
-        });
-      
-        const hardwareRecord = await newHardware.save();
-        res.status(201).json({ msg: 'Hardware record created successfully', hardware: hardwareRecord });
-
+        const hardware = await newHardware.save();
+        res.status(201).json(hardware);
     } catch (err) {
-        // ... (Error handling remains the same) ...
-        // ...
+        console.error('Server Error on Create:', err.message); 
+        res.status(500).json({ msg: `Server Error on Create: ${err.message}` });
     }
 };
 
-// ---------------------------------------------------
-// --- NEW EDIT/UPDATE FUNCTIONALITY ---
-// ---------------------------------------------------
 
-/**
- * @route PUT /api/hardware/:id
- * @desc Update ALL details of a single Hardware ITEM within the parent record
- * @access Private
- * @param {string} id - The ID of the parent Hardware document (The one with the items array).
- * @param {string} item_id - The ID of the specific item/subdocument being updated.
- * * NOTE: The client side is designed to send a single item update via a modal, 
- * so the logic targets one item by its subdocument ID.
- */
+// =========================================================
+// 🔥 BATCH IMPORT HARDWARE (FIXED AND COMPLETE)
+// =========================================================
+exports.batchImportHardware = async (req, res) => {
+    const recordsToImport = req.body;
+    const userId = req.user.id;
+
+    if (!Array.isArray(recordsToImport) || recordsToImport.length === 0) {
+        return res.status(400).json({ msg: 'Import payload must be a non-empty array of hardware records.' });
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const user = await User.findById(userId).session(session);
+        if (!user) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        const documentsToInsert = [];
+        let successCount = 0;
+        
+        // Diagnostic Log
+        if (recordsToImport.length > 0) {
+            console.log('--- RAW RECORD SAMPLE ---', JSON.stringify(recordsToImport[0], null, 2));
+        }
+
+        for (const record of recordsToImport) {
+            
+            const { 
+                hardwareItems,              
+                employeeAllocated: AllocatedName, // Renaming the name to avoid conflict
+                deliveryDate,               
+                installationDate,           
+                ...otherBodyFields          // Contains courtName, deadStockRegSrNo, source, etc.
+            } = record;
+            
+            // 2. Validate Items
+            if (!Array.isArray(hardwareItems) || hardwareItems.length === 0) {
+                console.warn(`Skipping record due to empty or missing hardwareItems: ${JSON.stringify(record)}`);
+                continue; 
+            }
+
+            // 3. Resolve Employee ID (Robust, case-insensitive fix for the batch)
+            let employeeId = null;
+           if (AllocatedName && typeof AllocatedName === 'string' && AllocatedName.length > 0) {
+    
+    // FIX IS HERE (you already have this): Robust Case-Insensitive Regex Lookup
+    const allocatedUser = await User.findOne({ 
+        fullName: { $regex: new RegExp(`^${AllocatedName}$`, 'i') } 
+    }).select('_id').session(session);
+    
+    employeeId = allocatedUser ? allocatedUser._id : null;
+    
+    // 🔥 NEW DIAGNOSTIC LOG (ADD THIS LINE):
+    console.log(`Lookup attempt for "${AllocatedName}": Found ID? ${employeeId ? 'YES: ' + employeeId : 'NO'}`);
+}
+            // 4. Map Hardware Items
+            const mappedItems = hardwareItems.map(item => ({
+                itemName: item.hardwareName,
+                serialNo: item.serialNumber,
+                company: item.company 
+            }));
+
+            // 5. Prepare Final Document Structure
+            const newHardwareDoc = {
+                ...otherBodyFields, 
+                
+                deliveryDate: safeDate(deliveryDate),
+                installationDate: safeDate(installationDate),
+                
+                employeeAllocated: employeeId, // Resolved ID (or null if lookup failed)
+                
+                items: mappedItems, 
+                user: userId,
+            };
+
+            documentsToInsert.push(newHardwareDoc);
+            successCount++;
+        }
+        
+        // 6. Handle Case: No valid documents to insert
+        if (documentsToInsert.length === 0) {
+            await session.commitTransaction(); 
+            session.endSession();
+            return res.status(200).json({ 
+                msg: 'File processed, but no valid records were inserted after filtering.', 
+                count: 0 
+            });
+        }
+
+        // 7. Insert documents
+        await Hardware.insertMany(documentsToInsert, { session, ordered: false });
+        
+        await session.commitTransaction();
+        session.endSession();
+        
+        // 8. Send final success response
+        res.status(201).json({ 
+            msg: `Successfully imported ${successCount} hardware records.`, 
+            count: successCount 
+        });
+
+    } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+        
+        console.error('Batch Import Server Error:', err);
+        
+        res.status(500).json({ 
+            msg: `Server failed to process the batch. A data error may exist in the file. Error: ${err.message}`,
+            error: err.message, 
+            count: 0
+        });
+    }
+};
+
+// =========================================================
+// --- UPDATE HARDWARE ITEM (EXISTING LOGIC) ---
+// =========================================================
 exports.updateHardwareItem = async (req, res) => {
     const parentId = req.params.id;
-    const { hardwareItems, employeeAllocated, ...otherBodyFields } = req.body; // Destructure employeeAllocated for validation
+    const { hardwareItems, employeeAllocated, ...otherBodyFields } = req.body;
     
     const itemToUpdate = hardwareItems?.[0]; 
     if (!itemToUpdate || !itemToUpdate._id) {
         return res.status(400).json({ msg: 'Item ID (_id) and update data are required.' });
     }
+    
+    // Lookup employee ID for update (needed if the name changes)
+    let employeeId = null;
+    if (employeeAllocated && employeeAllocated.length > 0) {
+         try {
+            const allocatedUser = await User.findOne({ 
+                fullName: { $regex: new RegExp(`^${employeeAllocated}$`, 'i') } 
+            }).select('_id');
+            employeeId = allocatedUser ? allocatedUser._id : null;
+        } catch (lookupErr) {
+            console.error('User lookup failed during update:', lookupErr.message);
+            employeeId = null;
+        }
+    }
 
-    // --- 🚨 CRITICAL VALIDATION FIX ---
-    // If the field is an empty string (""), set it to null to prevent the Cast Error.
-    // If it's a simple string like "adf", it will still throw an error unless you handle it more strictly.
-    const safeEmployeeAllocated = (employeeAllocated && employeeAllocated.length > 0) 
-        ? employeeAllocated 
-        : null;
 
     try {
-        // 1. Update the parent document's fields (courtName, dates, etc.)
-        const parentUpdate = await Hardware.findByIdAndUpdate(
+        // 1. Update the parent document's fields (courtName, dates, employeeAllocated ID, etc.)
+        await Hardware.findByIdAndUpdate(
             parentId,
             { 
                 $set: { 
                     ...otherBodyFields,
-                    // Use the safely validated/nullified value
-                    employeeAllocated: safeEmployeeAllocated, 
+                    employeeAllocated: employeeId, // Use the resolved ID here
+                    deliveryDate: safeDate(otherBodyFields.deliveryDate),
+                    installationDate: safeDate(otherBodyFields.installationDate),
                 } 
             },
             { new: true, runValidators: true }
         );
 
-        if (!parentUpdate) {
-            return res.status(404).json({ msg: 'Parent hardware record not found.' });
-        }
-
-        // 2. Update the specific subdocument (Adding 'company' field update for completeness)
+        // 2. Update the specific subdocument (item details)
         const subDocUpdate = await Hardware.findOneAndUpdate(
             { "_id": parentId, "items._id": itemToUpdate._id },
             { 
-                $set: {
+                $set: { 
                     "items.$.itemName": itemToUpdate.hardwareName,
                     "items.$.serialNo": itemToUpdate.serialNumber,
-                    "items.$.company": itemToUpdate.company // Assuming 'company' is also updated
+                    "items.$.company": itemToUpdate.company
                 } 
             },
             { new: true, runValidators: true }
@@ -114,51 +285,38 @@ exports.updateHardwareItem = async (req, res) => {
         res.json({ msg: 'Hardware item and metadata updated successfully', hardware: subDocUpdate });
 
     } catch (err) {
-        // ... (Error handling remains the same) ...
         console.error('Server Error on Update:', err.message);
         res.status(500).json({ msg: 'Server error' });
     }
 };
 
-// ---------------------------------------------------
-// --- NEW DELETE FUNCTIONALITY ---
-// ---------------------------------------------------
-
-/**
- * @route DELETE /api/hardware/:id/:item_id
- * @desc Delete a single Hardware ITEM (subdocument) from the parent record
- * @access Private
- * @param {string} id - The ID of the parent Hardware document.
- * @param {string} item_id - The ID of the specific item/subdocument to be removed.
- */
-// In hardwareController.js (simplified logic)
+// =========================================================
+// --- DELETE HARDWARE ITEM (EXISTING LOGIC) ---
+// =========================================================
 exports.deleteHardwareItem = async (req, res) => {
-    const parentId = req.params.parentId; // <--- This is the ID Mongoose can't find
+    const parentId = req.params.parentId; 
     const itemId = req.params.itemId;
 
-    const updatedRecord = await Hardware.findByIdAndUpdate(
-        parentId, // <--- Fails here if parentId is wrong
-        { $pull: { items: { _id: itemId } } },
-        { new: true }
-    );
+    try {
+        const updatedRecord = await Hardware.findByIdAndUpdate(
+            parentId, 
+            { $pull: { items: { _id: itemId } } },
+            { new: true }
+        );
 
-    if (!updatedRecord) {
-        // This is where your error comes from!
-        return res.status(404).json({ msg: 'Parent hardware record not found.' });
+        if (!updatedRecord) {
+            return res.status(404).json({ msg: 'Parent hardware record not found.' });
+        }
+        res.json({ msg: 'Hardware item deleted successfully', hardware: updatedRecord });
+    } catch (err) {
+        console.error('Server Error on Delete:', err.message);
+        res.status(500).json({ msg: 'Server error' });
     }
-    // ... rest of the code
 };
 
-
-// ---------------------------------------------------
-// --- EXISTING FETCH FUNCTIONS ---
-// ---------------------------------------------------
-
-/**
- * @route GET /api/hardware/user
- * @desc Get all Hardware records allocated to the authenticated user
- * @access Private
- */
+// =========================================================
+// --- FETCH FUNCTIONS (EXISTING LOGIC) ---
+// =========================================================
 exports.getUserHardware = async (req, res) => {
     try {
         const hardware = await Hardware.find({ employeeAllocated: req.user.id })
@@ -170,11 +328,6 @@ exports.getUserHardware = async (req, res) => {
     }
 };
 
-/**
- * @route GET /api/user/me
- * @desc Get authenticated user data
- * @access Private
- */
 exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password');
@@ -188,28 +341,17 @@ exports.getMe = async (req, res) => {
     }
 };
 
-/**
- * @route GET /api/hardware
- * @desc Get all Hardware records, populating employee details
- * @access Private (e.g., for Admin/Manager roles)
- * * NOTE: For the frontend table to work, this endpoint needs to map the nested array 
- * structure (one parent record with multiple items) into a flat array structure 
- * (one object per hardware item) before sending the response.
- */
 exports.getAllHardware = async (req, res) => {
     try {
-        const hardwareRecords = await Hardware.find()
-            // .populate('employeeAllocated', 'fullName mobileNo')
-            .populate('user', 'fullName'); 
+        const hardwareRecords = await Hardware.find();
 
-        // --- FLATTEN THE DATA FOR FRONTEND CONSUMPTION (IMPORTANT!) ---
-        // The frontend list expects a flat array where each object is a single hardware item.
+        // FLATTEN THE DATA FOR FRONTEND CONSUMPTION
         const flatHardwareList = hardwareRecords.flatMap(record => {
             return record.items.map(item => ({
-                _id: item._id, // ID of the specific item/subdocument (used for Edit/Delete)
-                parentId: record._id, // ID of the parent record (used for Edit/Delete)
-                hardwareName: item.itemName, // Mapped name
-                serialNumber: item.serialNo, // Mapped serial
+                _id: item._id, 
+                parentId: record._id, 
+                hardwareName: item.itemName, 
+                serialNumber: item.serialNo, 
                 courtName: record.courtName,
                 companyName: record.companyName,
                 deliveryDate: record.deliveryDate,
@@ -219,7 +361,7 @@ exports.getAllHardware = async (req, res) => {
                 source: record.source,
                 company:item.company,
                 employeeAllocated: record.employeeAllocated,
-                user: record.user // Creator/Entry user
+                user: record.user 
             }));
         });
 
