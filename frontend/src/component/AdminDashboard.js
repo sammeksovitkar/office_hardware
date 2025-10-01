@@ -30,13 +30,23 @@ const AdminDashboard = ({ setRole }) => {
     const hardwareFileInputRef = useRef(null); // RENAMED REF
 
     const policeStations = [
-        "Malegaon", "Manmad", "Manmad Railway", "Nashik City", "Nashik Road", "Gangapur", "Panchavati",
-        "Niphad", "Igatpuri", "Ghoti", "Wadivarhe", "Ozar", "Pimpalgaon Baswant",
-        "Sinnar", "Laslgaon", "Wavi", "Saykheda", "MIDC Sinner", "Yeola", "Nandgaon",
-        "Chandwad", "Vadner Bhairav", "Trimbakeshwar", "Harsul", "Kalwan", "Dindori",
-        "Vani", "Abhona", "Surgana", "Deola", "Satana", "Vadner Khakurdi", "Jaikheda",
-        "Azadnagar", "Ayeshnagar", "Pawarwadi", "Ramjanpura", "Malegaon Camp", "Malegaon Killa", "Malegaon Chavani"
-    ];
+        "Malegaon",
+    "Nandgaon",
+    "Satana",
+    "Niphad",
+    "Yeola",
+    "Chandwad",
+    "Pimpalgaon (B)",
+    "Manmad City",
+    "Manmad (Rly)",
+    "Sinnar",
+    "Dindori",
+    "Kalwan",
+    "Nashik-Road",
+    "Vehicle Section", // Changed "Motor Vehicle Court" to "Vehicle Section" for brevity
+    "Malegaon Sessions Division", // Kept specific functional names for clarity
+    "Niphad Sessions Division", 
+    "Nashik Dist Court"  ];
 
     const config = {
         headers: { 'x-auth-token': token },
