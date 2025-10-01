@@ -7,28 +7,46 @@ import {
     FaPlus, FaSignOutAlt, FaFilter, FaFileExcel, FaHome, FaUserCircle, 
     FaTimesCircle, FaDesktop, FaBuilding, FaUserTie, FaCalendarAlt, FaTrashAlt, FaInfoCircle
 } from 'react-icons/fa';
-import { MdOutlineSecurity, MdNumbers, MdAddBox } from 'react-icons/md';
+import { MdOutlineSecurity, MdNumbers } from 'react-icons/md';
 
-// Assuming these components are in the same folder or path
+// --- Assuming these components/paths are correct ---
 import HardwareModal from './HardwareModal'; 
 import HardwareList from './HardwareList'; 
 
-// --- Constants ---
+// --- Constants (Keeping your original court names) ---
 export const HARDWARE_OPTIONS = [
     'CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'
 ];
 
 export const COURT_STATIONS = [
-    "Malegaon Court", "Manmad Court", "Nashik City Court", "Niphad Court",
-    "Igatpuri Court", "Sinnar Court", "Yeola Court", "Nandgaon Court"
+    "Malegaon",
+    "Nandgaon",
+    "Satana",
+    "Niphad",
+    "Yeola",
+    "Chandwad",
+    "Pimpalgaon (B)",
+    "Manmad City",
+    "Manmad (Rly)",
+    "Sinnar",
+    "Dindori",
+    "Kalwan",
+    "Nashik-Road",
+    "Vehicle Section", // Changed "Motor Vehicle Court" to "Vehicle Section" for brevity
+    "Malegaon Sessions Division", // Kept specific functional names for clarity
+    "Niphad Sessions Division", 
+    "Nashik Dist Court"
 ];
 
-// --- Utility Components (Included for completeness) ---
+// ----------------------------------------------------------------
+// --- Utility Components (Refined for Admin Dashboard Look) ---
+// ----------------------------------------------------------------
 
 const MessageComponent = ({ message, type }) => {
     if (!message) return null;
-    const baseClasses = "py-3 px-6 rounded-xl font-medium text-white mb-3 transition-all duration-300 transform animate-fade-in flex items-center shadow-lg"; 
-    const typeClasses = type === "success" ? "bg-green-500" : "bg-red-500";
+    // Uses shadow-lg and rounded-xl consistent with Admin UI
+    const baseClasses = "py-3 px-6 rounded-xl font-medium text-white mb-4 transition-all duration-300 transform animate-fade-in flex items-center shadow-lg"; 
+    const typeClasses = type === "success" ? "bg-green-500" : "bg-red-600";
     const Icon = type === "success" ? FaDesktop : FaTimesCircle;
     return (
         <div className={`${baseClasses} ${typeClasses}`}>
@@ -39,8 +57,8 @@ const MessageComponent = ({ message, type }) => {
 };
 
 const FormInput = ({ label, id, name, value, onChange, type = 'text', required = false, error, children, icon: Icon, placeholder }) => (
-    <div className="flex flex-col mb-2"> 
-        <label htmlFor={id} className="text-xs font-medium text-gray-700 flex items-center mb-0.5"> 
+    <div className="flex flex-col mb-4"> 
+        <label htmlFor={id} className="text-sm font-medium text-gray-700 flex items-center mb-1"> 
             {Icon && <Icon className="mr-2 text-indigo-500 text-sm" />}
             {label} {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -54,7 +72,8 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
                     onChange={onChange}
                     required={required}
                     placeholder={placeholder} 
-                    className={`w-full p-1.5 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md transition-all duration-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm`}
+                    // Matches the focus ring and border style from Admin Panel
+                    className={`w-full p-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm`}
                 />
             )}
         </div>
@@ -62,7 +81,7 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
     </div>
 );
 
-// --- NEW INFO MODAL COMPONENT (For Show Button) ---
+// --- INFO MODAL COMPONENT (High-end Admin Look) ---
 const InfoModal = ({ record, onClose }) => {
     if (!record) return null;
 
@@ -79,80 +98,81 @@ const InfoModal = ({ record, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] transform transition-all duration-300 scale-100">
+            {/* Modal Body: Large padding, rounded-3xl, shadow-2xl for premium look */}
+            <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] transform transition-all duration-300 scale-100">
                 
                 {/* Header */}
-                <div className="flex justify-between items-center mb-4 border-b pb-3">
-                    <h2 className="text-2xl font-extrabold text-blue-700 flex items-center pt-1">
-                        <FaInfoCircle className="mr-3 text-xl"/> Hardware Details: <span className="ml-2 text-gray-800 italic">{record.hardwareName}</span>
+                <div className="flex justify-between items-center mb-6 border-b pb-3">
+                    <h2 className="text-2xl font-extrabold text-indigo-700 flex items-center">
+                        <FaInfoCircle className="mr-3 text-xl"/> Hardware Details: <span className="ml-2 text-gray-800 italic font-semibold">{record.hardwareName}</span>
                     </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-red-600 transition-colors text-xl p-1 ml-2">
+                    <button onClick={onClose} className="text-gray-400 hover:text-red-600 transition-colors text-2xl p-1 ml-2">
                         <FaTimesCircle />
                     </button>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto pr-2">
-                    {/* Column 1: Metadata */}
-                    <div className="bg-blue-50 p-4 rounded-xl shadow-inner border border-blue-200">
-                        <h3 className="text-md font-bold text-blue-800 mb-3 border-b border-blue-300 pb-1">General Information</h3>
+                    {/* Column 1: Metadata (Light Blue Panel for Info) */}
+                    <div className="bg-blue-50 p-5 rounded-xl shadow-inner border border-blue-200">
+                        <h3 className="text-lg font-bold text-blue-800 mb-4 border-b border-blue-300 pb-2">General Information</h3>
                         {metadataFields.map((field, index) => (
-                            <div key={index} className="flex items-start mb-2 text-sm">
+                            <div key={index} className="flex items-start mb-3 text-sm">
                                 <span className="w-1/2 font-semibold text-gray-700 flex items-center">
-                                    <field.icon className="mr-2 text-blue-500 text-sm"/> {field.label}:
+                                    <field.icon className="mr-2 text-blue-500 text-base"/> {field.label}:
                                 </span>
                                 <span className="w-1/2 text-gray-900 font-medium">{field.value}</span>
                             </div>
                         ))}
                     </div>
 
-                    {/* Column 2: Hardware Specifics */}
-                    <div className="bg-gray-100 p-4 rounded-xl shadow-inner border border-gray-200">
-                        <h3 className="text-md font-bold text-gray-800 mb-3 border-b border-gray-300 pb-1 flex items-center">
+                    {/* Column 2: Hardware Specifics (Light Gray Panel for Details) */}
+                    <div className="bg-gray-100 p-5 rounded-xl shadow-inner border border-gray-200">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 border-b border-gray-300 pb-2 flex items-center">
                             <FaDesktop className="mr-2"/> Hardware Item
                         </h3>
-                        <div className="space-y-3">
-                            <div className="text-base font-bold text-indigo-700 border-b pb-1">
+                        <div className="space-y-4">
+                            <div className="text-xl font-extrabold text-indigo-700 border-b pb-2">
                                 {record.hardwareName}
                             </div>
-                            <div className="text-sm">
+                            <div className="text-base">
                                 <span className="font-semibold text-gray-700">Serial Number:</span>
-                                <span className="ml-2 font-mono text-gray-900">{record.serialNumber}</span>
+                                <span className="ml-2 font-mono text-gray-900 bg-gray-200 p-1 rounded text-sm">{record.serialNumber}</span>
                             </div>
-                            <p className="text-xs text-gray-500 pt-2 border-t mt-3">
+                            <p className="text-xs text-gray-500 pt-3 border-t mt-3">
                                 Item ID: {record._id} 
                                 {record.parentId && (<span className="ml-3">Parent Record ID: {record.parentId}</span>)}
                             </p>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
 };
 
 
+// ----------------------------------------------------------------
 // --- Main Dashboard Component ---
+// ----------------------------------------------------------------
 
 const UserDashboard = () => {
     
     const [user, setUser] = useState(null);
     const [hardwareRecords, setHardwareRecords] = useState([]); 
     
-    // State for the main form data (used for both Create and Edit)
+    // State for the main form data
     const initialFormData = {
-        _id: null, // Subdocument ID of the item being edited
-        parentId: null, // Parent document ID (needed for PUT/DELETE)
+        _id: null, 
+        parentId: null, 
         courtName: '', companyName: '', deliveryDate: '', installationDate: '', 
         deadStockRegSrNo: '', deadStockBookPageNo: '', source: '',
         hardwareItems: [{ hardwareName: '', manualHardwareName: '', serialNumber: '' }]
     };
     const [formData, setFormData] = useState(initialFormData);
     
-    // State to manage modal visibility and what record is being viewed
-    const [showModal, setShowModal] = useState(false); // Used for Create/Edit
-    const [showInfoModal, setShowInfoModal] = useState(false); // Used for Show
-    const [editingRecord, setEditingRecord] = useState(null); // The full record object for Info/Edit
+    const [showModal, setShowModal] = useState(false); 
+    const [showInfoModal, setShowInfoModal] = useState(false); 
+    const [editingRecord, setEditingRecord] = useState(null); 
 
     const [filters, setFilters] = useState({ name: '', court: '', serialNo: '', company: '' });
     const [message, setMessage] = useState('');
@@ -192,7 +212,6 @@ const UserDashboard = () => {
 
     const fetchHardwareRecords = async () => {
         try {
-            // This endpoint must return the FLATTENED array including _id (item ID) and parentId
             const res = await axios.get(backend_Url + '/api/user/allhardware', config); 
             setHardwareRecords(res.data);
         } catch (err) {
@@ -215,7 +234,6 @@ const UserDashboard = () => {
                 if (name === 'hardwareName' && value !== 'Other') {
                     updatedItem.manualHardwareName = '';
                 }
-                // (Serial number validation logic omitted for brevity)
                 return updatedItem;
             }
             return item;
@@ -227,23 +245,18 @@ const UserDashboard = () => {
     const addHardwareItem = () => {
         setFormData({
             ...formData,
-            hardwareItems: [...formData.hardwareItems, { hardwareName: '', manualHardwareName: '', serialNumber: '' }]
+            hardwareItems: [...formData.hardwareItems, { hardwareName: '', manualHardwareName: '', serialNumber: '',company:'' }]
         });
     };
 
     const removeHardwareItem = (index) => {
-        // NOTE: In EDIT mode (formData._id exists), removing the item from the form
-        // doesn't delete it from the DB. Only DELETE action handles DB removal.
         const newItems = formData.hardwareItems.filter((_, i) => i !== index);
         setFormData({ ...formData, hardwareItems: newItems });
-        // (Serial errors cleanup omitted for brevity)
     };
 
     // Consolidated Submit/Update Handler
     const handleSubmitHardware = async (e) => {
         e.preventDefault();
-
-        // (Basic Validation omitted for brevity)
 
         try {
             const payload = {
@@ -254,30 +267,35 @@ const UserDashboard = () => {
                 deadStockRegSrNo: formData.deadStockRegSrNo,
                 deadStockBookPageNo: formData.deadStockBookPageNo,
                 source: formData.source,
-                // Map item data, including the item's _id if in edit mode
+                employeeAllocated:formData.employeeAllocated,
+                
                 hardwareItems: formData.hardwareItems.map(item => ({
-                    // Use item._id for the PUT request to identify the subdocument
-                    _id: formData._id ? item._id : undefined, 
-                    hardwareName: item.hardwareName === 'Other' ? item.manualHardwareName : item.hardwareName,
-                    serialNumber: item.serialNumber,
-                }))
+    _id: formData._id ? item._id : undefined, 
+    
+    // Maps the selected type or the manual input name
+    hardwareName: item.hardwareName === 'Other' ? item.manualHardwareName : item.hardwareName,
+    
+    serialNumber: item.serialNumber,
+    
+    // ✅ SOLUTION: Add the company field here
+    company: item.company, 
+}))
+
             };
 
             if (formData._id && formData.parentId) {
-                // *** EDIT LOGIC (PUT request) ***
-                // Uses the PARENT ID in the URL, sends the item's _id in the payload
+                // EDIT LOGIC (PUT request)
                 await axios.put(`${backend_Url}/api/user/hardware/${formData.parentId}`, payload, config);
                 showMessage(`Hardware record ID ${formData._id} updated successfully! ✅`, 'success');
             } else {
-                // *** CREATE LOGIC (POST request) ***
+                // CREATE LOGIC (POST request)
                 await axios.post(backend_Url + '/api/user/hardware', payload, config); 
                 showMessage('Hardware records created successfully! 🎉', 'success');
             }
             
-            // Reset form data and close modal
             setFormData(initialFormData);
             setShowModal(false);
-            fetchHardwareRecords(); // Refresh the list
+            fetchHardwareRecords(); 
         } catch (err) {
             const errMsg = err.response?.data?.msg || 'Operation failed. Check server logs.';
             showMessage(errMsg, 'error');
@@ -287,95 +305,72 @@ const UserDashboard = () => {
 
     // --- ACTION HANDLERS (Edit, Delete, Show) ---
 
-    // 1. EDIT FUNCTIONALITY (Accepts item ID and parent ID)
-    const handleEdit = (id, parentId) => {
-        // Find the full item object from the flattened list using its _id (item ID)
+const handleEdit = (id, parentId) => {
         const recordToEdit = hardwareRecords.find(h => h._id === id);
         
         if (recordToEdit) {
-            // Transform the single hardware item back into the form structure
             const item = {
-                // Determine if it was an 'Other' type
                 hardwareName: HARDWARE_OPTIONS.includes(recordToEdit.hardwareName) ? recordToEdit.hardwareName : 'Other',
-                manualHardwareName: HARDWARE_OPTIONS.includes(recordToEdit.hardwareName) ? '' : recordToEdit.hardwareName,
+                manualHardwareName: recordToEdit.company,
                 serialNumber: recordToEdit.serialNumber,
-                _id: recordToEdit._id // IMPORTANT: The subdocument ID
+                _id: recordToEdit._id,
+                
+                // 🛠️ FIX: Explicitly map the flattened 'companyName' to the item's 'company' field
+                company: recordToEdit.company, 
             };
 
             setFormData({
-                _id: recordToEdit._id, // Set the item ID
-                parentId: recordToEdit.parentId, // Set the Parent ID
+                _id: recordToEdit._id,
+                parentId: recordToEdit.parentId,
                 courtName: recordToEdit.courtName,
-                companyName: recordToEdit.companyName,
-                deliveryDate: recordToEdit.deliveryDate.split('T')[0], // format date for input
-                installationDate: recordToEdit.installationDate.split('T')[0], // format date for input
+                
+                // IMPORTANT: Ensure the top-level 'companyName' is also set for any metadata use.
+                companyName: recordToEdit.companyName, 
+                
+                deliveryDate: recordToEdit.deliveryDate.split('T')[0],
+                installationDate: recordToEdit.installationDate.split('T')[0],
                 deadStockRegSrNo: recordToEdit.deadStockRegSrNo || '',
                 deadStockBookPageNo: recordToEdit.deadStockBookPageNo || '',
                 source: recordToEdit.source,
-                hardwareItems: [item] // Only one item array for single-item edit mode
+                hardwareItems: [item],
+                employeeAllocated:recordToEdit.employeeAllocated
             });
-            setShowModal(true); // Open the main HardwareModal
+            setShowModal(true);
         } else {
             showMessage(`Record ID ${id} not found locally.`, 'error');
         }
     };
 
-    // 2. DELETE FUNCTIONALITY (Accepts item ID and parent ID)
-  // In UserDashboard.jsx
-
-// In UserDashboard.jsx
-
-// 2. DELETE FUNCTIONALITY (Accepts item ID and parent ID)
-// 2. DELETE FUNCTIONALITY (Accepts item ID and parent ID)
-const handleDelete = async (id, parentId) => {
-    if (!id || !parentId) {
-        showMessage("Error: Missing Item ID or Parent ID for deletion.", 'error');
-        return;
-    }
-
-    if (window.confirm(`Are you sure you want to permanently delete hardware item ID ${id} from record ${parentId}?`)) {
-        try {
-            const backend_Url = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-            
-            // 1. API Call for Deletion
-            await axios.delete(`${backend_Url}/api/user/hardware/${parentId}/${id}`, config);
-            
-            // 2. SET SUCCESS MESSAGE STATE FIRST (Displays the message)
-            await showMessage(`Hardware item ID: ${id} deleted successfully. 🗑️`, 'success');
-            
-            // 3. REFRESH THE DATA LIST FROM THE SERVER (Removes record from table)
-            // Await ensures the component re-renders ONLY after fetching the new data.
-            await fetchHardwareRecords();
-            
-        } catch (err) {
-            
-            // 4. ERROR MESSAGE CALL ON FAILURE
-            const errMsg = err.response?.data?.msg || 'Failed to delete record. Check API path or server logs.';
-            showMessage(errMsg, 'error');
-            
-            // 5. REFRESH THE DATA LIST (CRITICAL FIX)
-            // If the deletion failed (e.g., 404 or 500), we must refresh the list 
-            // to ensure the item stays in the table in case it was briefly removed 
-            // by a speculative local state change.
-            // We await the fetch to correctly synchronize the state after the error is displayed.
-            await fetchHardwareRecords();
+    const handleDelete = async (id, parentId) => {
+        if (!id || !parentId) {
+            showMessage("Error: Missing Item ID or Parent ID for deletion.", 'error');
+            return;
         }
-    }
-};
 
-    // 3. SHOW INFO FUNCTIONALITY
+        if (window.confirm(`Are you sure you want to permanently delete hardware item ID ${id} from record ${parentId}?`)) {
+            try {
+                await axios.delete(`${backend_Url}/api/user/hardware/${parentId}/${id}`, config);
+                await showMessage(`Hardware item ID: ${id} deleted successfully. 🗑️`, 'success');
+                await fetchHardwareRecords();
+            } catch (err) {
+                const errMsg = err.response?.data?.msg || 'Failed to delete record. Check API path or server logs.';
+                showMessage(errMsg, 'error');
+                await fetchHardwareRecords();
+            }
+        }
+    };
+
     const handleShow = (id) => {
-        // Find the full item object from the flattened list
         const record = hardwareRecords.find(h => h._id === id);
         if (record) {
             setEditingRecord(record);
-            setShowInfoModal(true); // Open the new InfoModal
+            setShowInfoModal(true);
         } else {
             showMessage(`Record ID ${id} not found.`, 'error');
         }
     };
     
-    // --- Table Filtering & Export (Omitted for brevity) ---
+    // --- Table Filtering & Export ---
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
@@ -391,7 +386,32 @@ const handleDelete = async (id, parentId) => {
         );
     });
 
-    const exportToExcel = () => { /* ... export logic ... */ };
+    const exportToExcel = () => { 
+        if (!filteredHardware.length) {
+            showMessage('No data to export. Try clearing your filters.', 'error');
+            return;
+        }
+
+        const dataToExport = filteredHardware.map(item => ({
+            "Hardware Name": item.hardwareName,
+            "Serial Number": item.serialNumber,
+            "Court Name": item.courtName,
+            "Company": item.companyName,
+            "Delivery Date": item.deliveryDate ? new Date(item.deliveryDate).toLocaleDateString() : 'N/A',
+            "Installation Date": item.installationDate ? new Date(item.installationDate).toLocaleDateString() : 'N/A',
+            "Dead Stock Sr. No.": item.deadStockRegSrNo,
+            "Dead Stock Page No.": item.deadStockBookPageNo,
+            "Source": item.source,
+            "Allocated Employee": item.employeeAllocated || 'N/A',
+        }));
+        
+        const ws = XLSX.utils.json_to_sheet(dataToExport);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Hardware Inventory");
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const dataBlob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+        saveAs(dataBlob, "HardwareInventory_Export.xlsx");
+    };
 
     const handleLogout = () => {
         localStorage.clear();
@@ -403,59 +423,99 @@ const handleDelete = async (id, parentId) => {
     return (
         <div className="flex min-h-screen bg-gray-50 font-sans text-gray-800">
             
-            {/* ... Sidebar and Header content (omitted) ... */}
-            <div className="flex-1 p-4 sm:p-8 lg:p-10">
+            {/* Sidebar (Placeholder for full Admin/User consistency) */}
+            <div className="hidden md:flex w-64 bg-white border-r border-gray-200 p-6 flex-col shadow-lg">
+                <div className="flex items-center mb-8">
+                    <FaDesktop className="text-3xl text-indigo-600 mr-3" /> 
+                    <h1 className="text-2xl font-bold">IT Dashboard</h1>
+                </div>
+                <div className="flex items-center p-4 bg-gray-100 rounded-lg mb-6">
+                    <FaUserCircle className="text-4xl text-indigo-600 mr-3" />
+                    <div className="flex flex-col">
+                        <span className="text-xs text-gray-500">Logged in as</span>
+                        <span className="font-semibold text-gray-800">{user?.fullName || 'User'}</span>
+                    </div>
+                </div>
+                <nav className="flex-1 space-y-2">
+                    <button
+                        className="w-full flex items-center p-3 rounded-lg font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors duration-200"
+                    >
+                        <FaHome className="mr-4 text-xl" />
+                        Inventory View
+                    </button>
+                    {/* Additional User Nav Links Here */}
+                </nav>
+                <div className="mt-auto pt-6 border-t border-gray-200">
+                    <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center p-3 rounded-lg font-medium text-white bg-red-600 hover:bg-red-700 transition-colors duration-300 shadow-lg"
+                    >
+                        <FaSignOutAlt className="mr-2" /> Logout
+                    </button>
+                </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 p-8 sm:p-10">
                 
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 pb-2 border-b border-gray-200">
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-3 border-b border-gray-200">
                     <div>
-                        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Hardware Inventory</h1>
-                        <p className="text-gray-500 mt-0 text-xs">Manage and view all hardware assets allocated to this area.</p>
+                        <h1 className="text-4xl font-extrabold text-gray-900">Hardware Inventory</h1>
+                        <p className="text-gray-500 mt-1">Manage and view all hardware assets allocated to this area.</p>
                     </div>
                     
-                    <div className="flex space-x-3 mt-2 md:mt-0">
+                    <div className="flex space-x-3 mt-4 md:mt-0">
                         <button
                             onClick={() => {
                                 setFormData(initialFormData); // Reset form data to create a new record
                                 setShowModal(true);
                             }}
-                            className="px-5 py-2 rounded-xl bg-indigo-600 text-white font-semibold flex items-center hover:bg-indigo-700 transition-all duration-300 shadow-lg shadow-indigo-300/50 text-sm"
+                            // Primary Indigo Button Style
+                            className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-semibold flex items-center hover:bg-indigo-700 transition-all duration-300 shadow-lg shadow-indigo-300/50 text-sm"
                         >
                             <FaPlus className="mr-2" /> Add Hardware
                         </button>
                         <button
                             onClick={exportToExcel}
-                            className="px-5 py-2 rounded-xl bg-green-600 text-white font-semibold flex items-center hover:bg-green-700 transition-all duration-300 shadow-lg shadow-green-300/50 text-sm"
+                            // Secondary Green Button Style (consistent action coloring)
+                            className="px-6 py-2 rounded-xl bg-green-600 text-white font-semibold flex items-center hover:bg-green-700 transition-all duration-300 shadow-lg shadow-green-300/50 text-sm"
                         >
-                            <FaFileExcel className="mr-2" /> Export
+                            <FaFileExcel className="mr-2" /> Export Data
                         </button>
                     </div>
                 </header>
 
                 <MessageComponent message={message} type={messageType} />
 
-                {/* Filters (omitted) */}
-                <div className="bg-white p-2 rounded-xl shadow-xl mb-3 border border-gray-100">
-                    <h3 className="text-sm font-semibold mb-1 flex items-center text-gray-700"><FaFilter className="mr-2 text-sm text-indigo-600" /> Quick Filters</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-2">
-                        <FormInput type="text" name="name" placeholder="Hardware Name" value={filters.name} onChange={handleFilterChange} />
-                        <FormInput type="text" name="serialNo" placeholder="Serial No." value={filters.serialNo} onChange={handleFilterChange} />
-                        <FormInput type="text" name="company" placeholder="Company Name" value={filters.company} onChange={handleFilterChange} />
-                        <select value={filters.court} name="court" onChange={handleFilterChange} className="p-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-inner appearance-none bg-white h-[41.5px]">
-                            <option value="">All Court Names</option>
-                            {COURT_STATIONS.map((court) => (<option key={court} value={court}>{court}</option>))}
-                        </select>
+                {/* Filters Card (Admin-style card) */}
+                <div className="bg-white p-4 rounded-xl shadow-xl mb-6 border border-gray-100">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center text-gray-700"><FaFilter className="mr-2 text-base text-indigo-600" /> Quick Filters</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                        <FormInput type="text" name="name" placeholder="Hardware Name" label="Item Name" value={filters.name} onChange={handleFilterChange} />
+                        <FormInput type="text" name="serialNo" placeholder="Serial No." label="Serial Number" value={filters.serialNo} onChange={handleFilterChange} />
+                        <FormInput type="text" name="company" placeholder="Company Name" label="Vendor Company" value={filters.company} onChange={handleFilterChange} />
+                        <FormInput label="Court Station" name="court" value={filters.court} onChange={handleFilterChange}>
+                            <select value={filters.court} name="court" onChange={handleFilterChange} 
+                                className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm appearance-none bg-white h-[47px]"
+                            >
+                                <option value="">All Court Names</option>
+                                {COURT_STATIONS.map((court) => (<option key={court} value={court}>{court}</option>))}
+                            </select>
+                        </FormInput>
                     </div>
                 </div>
 
                 {/* Table Component */}
-                <HardwareList 
-                    filteredHardware={filteredHardware}
-                    handleEdit={handleEdit}
-                    handleDelete={handleDelete}
-                    handleShow={handleShow}
-                />
+                <div className="bg-white p-6 rounded-xl shadow-xl">
+                    <HardwareList 
+                        filteredHardware={filteredHardware}
+                        handleEdit={handleEdit}
+                        handleDelete={handleDelete}
+                        handleShow={handleShow}
+                    />
+                </div>
 
-                {/* CREATE/EDIT MODAL POPUP */}
+                {/* CREATE/EDIT MODAL POPUP (Uses Admin modal design principles) */}
                 {showModal && (
                     <HardwareModal
                         formData={formData}
@@ -467,12 +527,12 @@ const handleDelete = async (id, parentId) => {
                         serialErrors={serialErrors}
                         onClose={() => {
                             setShowModal(false);
-                            setFormData(initialFormData); // Clear form state on close
+                            setFormData(initialFormData); 
                         }}
                     />
                 )}
 
-                {/* INFO/SHOW MODAL POPUP */}
+                {/* INFO/SHOW MODAL POPUP (Uses the designed InfoModal) */}
                 {showInfoModal && (
                     <InfoModal
                         record={editingRecord}

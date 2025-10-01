@@ -30,9 +30,24 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
 );
 
 const COURT_STATIONS = [
-    "Malegaon Court", "Manmad Court", "Nashik City Court", "Niphad Court",
-    "Igatpuri Court", "Sinnar Court", "Yeola Court", "Nandgaon Court"
-];
+    "Malegaon",
+    "Nandgaon",
+    "Satana",
+    "Niphad",
+    "Yeola",
+    "Chandwad",
+    "Pimpalgaon (B)",
+    "Manmad City",
+    "Manmad (Rly)",
+    "Sinnar",
+    "Dindori",
+    "Kalwan",
+    "Nashik-Road",
+    "Vehicle Section", // Changed "Motor Vehicle Court" to "Vehicle Section" for brevity
+    "Malegaon Sessions Division", // Kept specific functional names for clarity
+    "Niphad Sessions Division", 
+    "Nashik Dist Court"
+]
 
 
 const CoreMetadataForm = ({ formData, handleMainFormChange }) => {
@@ -58,16 +73,7 @@ const CoreMetadataForm = ({ formData, handleMainFormChange }) => {
                     </select>
                 </FormInput>
                 
-                {/* Company Name */}
-                <FormInput 
-                    label="Company Name" 
-                    id="companyName" 
-                    name="companyName" 
-                    value={formData.companyName} 
-                    onChange={handleMainFormChange} 
-                    required 
-                    icon={FaBuilding} 
-                />
+                {/* REMOVED: Company Name Input Field */}
                 
                 {/* Source */}
                 <FormInput 
@@ -77,6 +83,16 @@ const CoreMetadataForm = ({ formData, handleMainFormChange }) => {
                     value={formData.source} 
                     onChange={handleMainFormChange} 
                     required 
+                    icon={FaUserTie} 
+                />
+                
+                {/* Employee Allocated */}
+                <FormInput 
+                    label="Employee Allocated" 
+                    id="employeeAllocated" 
+                    name="employeeAllocated" 
+                    value={formData.employeeAllocated} 
+                    onChange={handleMainFormChange} 
                     icon={FaUserTie} 
                 />
                 

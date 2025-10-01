@@ -1,5 +1,6 @@
 const User = require('../models/User');
-const Surety = require('../models/Surety');
+// Require the Hardware model
+const Hardware = require('../models/Hardware'); 
 const bcrypt = require('bcryptjs');
 const xlsx = require('xlsx');
 
@@ -23,6 +24,7 @@ exports.createUser = async (req, res) => {
     if (user) return res.status(400).json({ msg: 'User with this mobile number already exists' });
 
     const salt = await bcrypt.genSalt(10);
+    // Use DOB as the default password for simplicity (hashed)
     const password = await bcrypt.hash(dob, salt);
 
     user = new User({ fullName, dob, mobileNo, village, emailId, password });
@@ -46,7 +48,8 @@ exports.updateUser = async (req, res) => {
     user.village = village || user.village;
     user.emailId = emailId || user.emailId;
 
-    if (dob) {
+    // Reset password if DOB is provided/changed
+    if (dob && dob !== user.dob) { 
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(dob, salt);
     }
@@ -77,6 +80,8 @@ exports.importUsersFromExcel = async (req, res) => {
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);
 
+    let savedCount = 0;
+
     for (const row of data) {
       const { 'Full Name': fullName, 'DOB (YYYY-MM-DD)': dob, 'Mobile No': mobileNo, Village, 'Email ID': emailId } = row;
 
@@ -98,206 +103,321 @@ exports.importUsersFromExcel = async (req, res) => {
       });
 
       await newUser.save();
-    }
-    res.json({ msg: 'Users imported successfully' });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
-// ---------------------------------------------------------------- //
-// --------------------------- SURETY LOGIC ------------------------- //
-// ---------------------------------------------------------------- //
-
-exports.getAllSureties = async (req, res) => {
-  try {
-    const sureties = await Surety.find().populate('assignedToUser', 'fullName mobileNo');
-    res.json(sureties);
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
-// **ADDED: Function to create a new Surety (similar to createUser)**
-exports.createSurety = async (req, res) => {
-  const { shurityName, address, aadharNo, policeStation, caseFirNo, actName, section, accusedName, accusedAddress, shurityAmount, shurityDate, courtCity, assignedToUser } = req.body;
-  try {
-    // Check for existing surety by Aadhar
-    let exists = await Surety.findOne({ aadharNo });
-    if (exists) return res.status(400).json({ msg: 'Surety with this Aadhar number already exists' });
-    
-    // Determine the user to assign this to (could be the authenticated user or an admin ID)
-    const userToAssignId = assignedToUser || req.user?.id; // Assuming req.user is available for authenticated API
-
-    const newSurety = new Surety({
-      shurityName,
-      address,
-      aadharNo,
-      policeStation,
-      caseFirNo,
-      actName,
-      section,
-      accusedName,
-      accusedAddress,
-      shurityAmount,    // <<-- ADDED
-      shurityDate,      // <<-- ADDED
-      courtCity,
-      assignedToUser: userToAssignId, 
-    });
-
-    await newSurety.save();
-    res.status(201).json({ msg: 'Surety created successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ msg: 'Server error during surety creation' });
-  }
-};
-
-// **UPDATED: Added shurityAmount and shurityDate to updateSurety**
-exports.updateSurety = async (req, res) => {
-  const { shurityName, address, aadharNo, policeStation, caseFirNo, actName, section, accusedName, accusedAddress, shurityAmount, shurityDate } = req.body;
-  try {
-    const surety = await Surety.findById(req.params.id);
-    if (!surety) return res.status(404).json({ msg: 'Surety record not found' });
-
-    surety.shurityName = shurityName || surety.shurityName;
-    surety.address = address || surety.address;
-    surety.aadharNo = aadharNo || surety.aadharNo;
-    surety.policeStation = policeStation || surety.policeStation;
-    surety.caseFirNo = caseFirNo || surety.caseFirNo;
-    surety.actName = actName || surety.actName;
-    surety.section = section || surety.section;
-    surety.accusedName = accusedName || surety.accusedName;
-    surety.accusedAddress = accusedAddress || surety.accusedAddress;
-    surety.shurityAmount = shurityAmount || surety.shurityAmount; // <<-- ADDED
-    surety.shurityDate = shurityDate || surety.shurityDate;     // <<-- ADDED
-
-    await surety.save();
-    res.json({ msg: 'Surety record updated successfully' });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
-exports.deleteSurety = async (req, res) => {
-  try {
-    const surety = await Surety.findByIdAndDelete(req.params.id);
-    if (!surety) return res.status(404).json({ msg: 'Surety record not found' });
-    res.json({ msg: 'Surety record deleted successfully' });
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
-// **UPDATED: Added shurityAmount and shurityDate to importSuretiesFromExcel**
-exports.importSuretiesFromExcel = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ msg: "No file uploaded" });
-    }
-
-    // Ensure default user exists and HASH the password
-    let userToAssign = await User.findOne({ mobileNo: "9999999999" });
-    if (!userToAssign) {
-      const salt = await bcrypt.genSalt(10);
-      const password = await bcrypt.hash("2000-01-01", salt); 
-
-      userToAssign = await User.create({
-        fullName: "Default Admin",
-        dob: "2000-01-01",
-        mobileNo: "9999999999",
-        village: "Default",
-        emailId: "default@example.com",
-        password: password, // Use hashed password
-      });
-    }
-
-    // Read Excel
-    const workbook = xlsx.read(req.file.buffer);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(sheet);
-
-    let duplicates = [];
-    let savedCount = 0;
-
-    for (const row of data) {
-      const aadharNo = row["Aadhar No."] || row["Aadhar No"] || row.aadharNo;
-      const shurityName = row.shurityName || row["shurityName"] || row["Surety Name"];
-      const address = row.Address || row["address"];
-      const policeStation = row["Police Station"] || row.policeStation;
-      const caseFirNo = row["Case/FIR No."] || row["Case/FIR No"] || row.caseFirNo;
-      const actName = row["Act Name"] || row.actName;
-      const section = row.Section || row.section;
-      const accusedName = row["Accused Name"] || row.accusedName;
-      const accusedAddress = row["Accused Address"] || row.accusedAddress;
-      const courtCity = row.courtCity || row["Court City"];
-
-      // <<-- ADDED NEW IMPORT FIELDS -->>
-      const shurityAmount = row["Surety Amount"] || row.shurityAmount;
-      const shurityDate = row["Surety Date"] || row.shurityDate;
-      // <<----------------------------->>
-
-      // Check for required fields, including the new ones
-      if (!aadharNo || !shurityName || !address || !policeStation || !caseFirNo || !actName || !section || !accusedName || !accusedAddress || !courtCity || !shurityAmount || !shurityDate) {
-        continue; // skip incomplete rows
-      }
-
-      const exists = await Surety.findOne({ aadharNo });
-      if (exists) {
-        duplicates.push({
-          aadharNo,
-          existingSurety: exists.shurityName,
-          newSurety: shurityName,
-        });
-        continue; // skip duplicates
-      }
-
-      const newSurety = new Surety({
-        shurityName,
-        address,
-        aadharNo,
-        policeStation,
-        caseFirNo,
-        actName,
-        section,
-        accusedName,
-        accusedAddress,
-        courtCity,
-        shurityAmount, // <<-- ADDED
-        shurityDate,   // <<-- ADDED
-        assignedToUser: userToAssign._id,
-      });
-
-      await newSurety.save();
       savedCount++;
     }
-
-    // Response messages
-    if (duplicates.length > 0 && savedCount > 0) {
-      return res.json({
-        msg: "Some records were imported; some duplicates were skipped",
-        saved: savedCount,
-        skipped: duplicates.length,
-        duplicates,
-      });
-    } else if (duplicates.length > 0 && savedCount === 0) {
-      return res.json({
-        msg: "All records are duplicates. No new records were imported",
-        saved: 0,
-        skipped: duplicates.length,
-        duplicates,
-      });
-    } else {
-      return res.json({
-        msg: "Sureties import completed successfully",
-        saved: savedCount,
-        skipped: 0,
-        duplicates: [],
-      });
-    }
+    res.json({ msg: `Successfully imported ${savedCount} users.` });
   } catch (err) {
-    console.error("❌ Surety import error:", err);
-    res.status(500).json({ msg: "Server error during surety import" });
+    console.error("User import error:", err);
+    res.status(500).json({ msg: 'Server error during user import' });
   }
+};
+
+// ---------------------------------------------------------------- //
+// ------------------------- HARDWARE LOGIC ------------------------- //
+// ---------------------------------------------------------------- //
+
+/**
+ * @route GET /api/admin/hardware
+ * @desc Get all Hardware records and FLATTEN the data for the Admin Dashboard table.
+ * @access Private (Admin)
+ */
+exports.getAllHardware = async (req, res) => {
+    try {
+        const hardwareRecords = await Hardware.find()
+            // .populate('employeeAllocated', 'fullName mobileNo')
+            .populate('user', 'fullName'); 
+
+        // --- FLATTEN THE DATA FOR FRONTEND CONSUMPTION (IMPORTANT!) ---
+        // The frontend list expects a flat array where each object is a single hardware item.
+        const flatHardwareList = hardwareRecords.flatMap(record => {
+            return record.items.map(item => ({
+                _id: item._id, // ID of the specific item/subdocument (used for Edit/Delete)
+                parentId: record._id, // ID of the parent record (used for Edit/Delete)
+                hardwareName: item.itemName, // Mapped name
+                serialNumber: item.serialNo, // Mapped serial
+                courtName: record.courtName,
+                companyName: record.companyName,
+                deliveryDate: record.deliveryDate,
+                installationDate: record.installationDate,
+                deadStockRegSrNo: record.deadStockRegSrNo,
+                deadStockBookPageNo: record.deadStockBookPageNo,
+                source: record.source,
+                company:item.company,
+                employeeAllocated: record.employeeAllocated,
+                user: record.user // Creator/Entry user
+            }));
+        });
+
+        res.json(flatHardwareList);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+/**
+ * @route POST /api/admin/hardware
+ * @desc Create a new Hardware record using Admin form fields.
+ * @access Private (Admin)
+ */
+exports.createHardware = async (req, res) => {
+    // 1. Map Admin Dashboard form fields back to the schema structure
+    const { 
+        itemName, serialNo, courtCity, policeStation, assetTag, manufacturer, 
+        model, allocatedTo, department, hardwareCount, deliveryDate
+    } = req.body;
+
+    try {
+        // Find the user to be allocated (requires a separate lookup, using the Admin's ID as placeholder if not specified)
+        const employee = await User.findOne({ fullName: allocatedTo }) || req.user.id;
+        const employeeId = (typeof employee === 'object') ? employee._id : req.user.id;
+        
+        // 2. Create the items array (simplified to one item for the Admin form structure)
+        const itemsArray = [{
+            itemName: itemName,
+            serialNo: serialNo,
+        }];
+
+        const newHardware = new Hardware({
+            // Core fields for the parent document
+            courtName: courtCity,
+            companyName: manufacturer,
+            deliveryDate: deliveryDate,
+            source: policeStation,
+            deadStockRegSrNo: assetTag, // Asset Tag mapped to Dead Stock Reg Sr No.
+            
+            // Nested array
+            items: itemsArray,
+            
+            // Allocation and Entry
+            user: req.user.id,
+            employeeAllocated: employeeId,
+        });
+
+        const hardwareRecord = await newHardware.save();
+        res.status(201).json({ msg: 'Hardware record created successfully' });
+
+    } catch (err) {
+        if (err.code === 11000) {
+            return res.status(400).json({ msg: 'Conflict: A serial number already exists.' });
+        }
+        if (err.name === 'ValidationError') {
+            const requiredFields = Object.keys(err.errors).join(', ');
+            return res.status(400).json({ msg: 'Validation error', details: `Missing or invalid field(s): ${requiredFields}` });
+        }
+        console.error('Server Error (Admin Create Hardware):', err.message);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+/**
+ * @route PUT /api/admin/hardware/:id
+ * @desc Update a single Hardware ITEM (subdocument) AND its parent metadata.
+ * @access Private (Admin)
+ * @param {string} id - The ID of the specific item/subdocument being updated.
+ */
+exports.updateHardware = async (req, res) => {
+    const itemId = req.params.id; // Item ID passed from the Admin table row
+    const { 
+        itemName, serialNo, courtCity, policeStation, assetTag, manufacturer, 
+        model, allocatedTo, department, hardwareCount, deliveryDate
+    } = req.body;
+
+    try {
+        // Find the parent record containing the item
+        const parentRecord = await Hardware.findOne({ 'items._id': itemId });
+        if (!parentRecord) {
+            return res.status(404).json({ msg: 'Hardware record not found.' });
+        }
+        const parentId = parentRecord._id;
+
+        // Find the user to be allocated (requires a separate lookup)
+        const employee = await User.findOne({ fullName: allocatedTo }) || parentRecord.employeeAllocated;
+        const employeeId = (typeof employee === 'object') ? employee._id : parentRecord.employeeAllocated;
+
+        // 1. Update the parent document's metadata fields
+        await Hardware.findByIdAndUpdate(
+            parentId,
+            { 
+                $set: { 
+                    courtName: courtCity,
+                    companyName: manufacturer,
+                    deliveryDate: deliveryDate,
+                    source: policeStation,
+                    deadStockRegSrNo: assetTag,
+                    employeeAllocated: employeeId,
+                } 
+            },
+            { new: true, runValidators: true }
+        );
+
+        // 2. Update the specific subdocument (item)
+        const updatedItem = await Hardware.findOneAndUpdate(
+            { "_id": parentId, "items._id": itemId },
+            { 
+                $set: {
+                    "items.$.itemName": itemName,
+                    "items.$.serialNo": serialNo
+                } 
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedItem) {
+            return res.status(404).json({ msg: 'Hardware item update failed.' });
+        }
+
+        res.json({ msg: 'Hardware record updated successfully' });
+
+    } catch (err) {
+        if (err.code === 11000) {
+            return res.status(400).json({ msg: 'Conflict: The serial number provided already exists.' });
+        }
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ msg: 'Validation error', details: err.message });
+        }
+        console.error('Server Error (Admin Update Hardware):', err.message);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+/**
+ * @route DELETE /api/admin/hardware/:id
+ * @desc Delete a single Hardware ITEM (subdocument) OR the entire parent record if it's the last item.
+ * @access Private (Admin)
+ * @param {string} id - The ID of the specific item/subdocument to be removed.
+ */
+exports.deleteHardware = async (req, res) => {
+    const itemId = req.params.id; // Item ID passed from the Admin table row
+
+    try {
+        // Find the parent record
+        const parentRecord = await Hardware.findOne({ 'items._id': itemId });
+        if (!parentRecord) {
+            return res.status(404).json({ msg: 'Hardware record not found.' });
+        }
+        const parentId = parentRecord._id;
+
+        // Remove the subdocument using $pull
+        const updatedRecord = await Hardware.findByIdAndUpdate(
+            parentId, 
+            { $pull: { items: { _id: itemId } } },
+            { new: true }
+        );
+
+        // OPTIONAL: If the items array is now empty, delete the parent record
+        if (updatedRecord && updatedRecord.items.length === 0) {
+            await Hardware.findByIdAndDelete(parentId);
+            return res.json({ msg: 'Last hardware item and parent record deleted successfully.' });
+        }
+
+        res.json({ msg: 'Hardware item deleted successfully.' });
+
+    } catch (err) {
+        console.error('Server Error (Admin Delete Hardware):', err.message);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+/**
+ * @route POST /api/admin/hardware/import
+ * @desc Import hardware records from Excel.
+ * @access Private (Admin)
+ */
+exports.importHardwareFromExcel = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ msg: "No file uploaded" });
+        }
+
+        // Find a default user (Admin) to assign as the entry user
+        let userToAssign = await User.findOne({ role: 'admin' });
+        if (!userToAssign) {
+            return res.status(500).json({ msg: "No Admin user found to assign the import entry." });
+        }
+
+        // Read Excel
+        const workbook = xlsx.read(req.file.buffer);
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet);
+
+        let duplicates = [];
+        let savedCount = 0;
+
+        for (const row of data) {
+            // Map Excel columns to Mongoose fields (Adjust these names based on your expected Excel header)
+            const itemName = row["Item Name"] || row.itemName;
+            const serialNo = row["Serial No."] || row.serialNo;
+            const courtCity = row["Court City"] || row.courtCity;
+            const policeStation = row["Police Station"] || row.policeStation;
+            const assetTag = row["Asset Tag"] || row.assetTag;
+            const manufacturer = row.Manufacturer || row.manufacturer;
+            const allocatedToName = row["Allocated To"] || row.allocatedTo;
+            const deliveryDate = row["Delivery Date"] || row.deliveryDate;
+            
+            // Find the allocated employee by name
+            const allocatedEmployee = await User.findOne({ fullName: allocatedToName }) || userToAssign; 
+            const allocatedEmployeeId = (typeof allocatedEmployee === 'object') ? allocatedEmployee._id : userToAssign._id;
+
+            // Check for required fields
+            if (!itemName || !serialNo || !courtCity || !assetTag || !deliveryDate) {
+                continue; // skip incomplete rows
+            }
+
+            // Check for existing item by serial number (requires index on items.serialNo)
+            const exists = await Hardware.findOne({ "items.serialNo": serialNo });
+            if (exists) {
+                duplicates.push({ serialNo, itemName });
+                continue; // skip duplicates
+            }
+
+            // 1. Prepare the nested item structure
+            const itemsArray = [{
+                itemName: itemName,
+                serialNo: serialNo,
+            }];
+
+            // 2. Create the new parent hardware record
+            const newHardware = new Hardware({
+                courtName: courtCity,
+                companyName: manufacturer,
+                deliveryDate: deliveryDate,
+                source: policeStation,
+                deadStockRegSrNo: assetTag, // Asset Tag
+                
+                items: itemsArray,
+                
+                user: userToAssign._id,
+                employeeAllocated: allocatedEmployeeId,
+            });
+
+            await newHardware.save();
+            savedCount++;
+        }
+
+        // Response messages
+        if (duplicates.length > 0 && savedCount > 0) {
+            return res.json({
+                msg: `Successfully imported ${savedCount} records. ${duplicates.length} duplicates were skipped.`,
+                saved: savedCount,
+                skipped: duplicates.length,
+            });
+        } else if (duplicates.length > 0 && savedCount === 0) {
+            return res.json({
+                msg: "All records are duplicates. No new records were imported",
+                saved: 0,
+                skipped: duplicates.length,
+            });
+        } else {
+            return res.json({
+                msg: "Hardware import completed successfully",
+                saved: savedCount,
+                skipped: 0,
+            });
+        }
+    } catch (err) {
+        console.error("❌ Hardware import error:", err);
+        res.status(500).json({ msg: "Server error during hardware import" });
+    }
 };

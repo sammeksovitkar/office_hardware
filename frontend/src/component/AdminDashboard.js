@@ -24,7 +24,7 @@ const AdminDashboard = ({ setRole }) => {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     // Ensure this environment variable is correctly set
-    const backend_Url = process.env.REACT_APP_BACKEND_URL
+    const backend_Url = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'
 
     const userFileInputRef = useRef(null);
     const hardwareFileInputRef = useRef(null); // RENAMED REF
@@ -43,7 +43,7 @@ const AdminDashboard = ({ setRole }) => {
     };
 
     useEffect(() => {
-        // fetchAdminData();
+        fetchAdminData();
         if (view === 'users') {
             fetchUsers();
         } else if (view === 'hardware') { // RENAMED VIEW CHECK
@@ -250,7 +250,7 @@ const AdminDashboard = ({ setRole }) => {
         const usersData = filteredUsers.map(user => ({
             "Full Name": user.fullName,
             "Mobile No.": user.mobileNo,
-            "DOB": user.dob.split('T')[0],
+            "DOB": user.dob ? user.dob.split('T')[0] : 'N/A',
             "Village": user.village,
             "Email ID": user.emailId,
         }));
@@ -283,10 +283,20 @@ const AdminDashboard = ({ setRole }) => {
     );
 
     const filteredHardware = hardware.filter(item => // RENAMED VARIABLE
-        (item.itemName?.toLowerCase().includes(filter.toLowerCase())) || // RENAMED FIELD
-        (item.serialNo?.toLowerCase().includes(filter.toLowerCase())) || // RENAMED FIELD
-        (item.assetTag?.toLowerCase().includes(filter.toLowerCase())) // RENAMED FIELD
+        (item.hardwareName?.toLowerCase().includes(filter.toLowerCase())) || // RENAMED FIELD
+        (item.serialNumber?.toLowerCase().includes(filter.toLowerCase())) || // RENAMED FIELD
+        (item.courtName?.toLowerCase().includes(filter.toLowerCase())) || // RENAMED FIELD
+        (item.companyName?.toLowerCase().includes(filter.toLowerCase()))
     );
+
+    //   const filteredHardware = hardwareRecords.filter((h) => {
+    //     return (
+    //         (!filters.name || h.hardwareName.toLowerCase().includes(filters.name.toLowerCase())) &&
+    //         (!filters.serialNo || h.serialNumber.toLowerCase().includes(filters.serialNo.toLowerCase())) &&
+    //         (!filters.court || h.courtName === filters.court) &&
+    //         (!filters.company || h.companyName.toLowerCase().includes(filters.company.toLowerCase()))
+    //     );
+    // });
 
     // MODAL RENDER FUNCTION - UI FIELD LABELS UPDATED
     const renderModal = () => {
@@ -297,7 +307,7 @@ const AdminDashboard = ({ setRole }) => {
                     <button onClick={() => setIsModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-800 transition-colors">
                         <FaTimes size={24} />
                     </button>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">{isEditing ? `Edit ${modalType}` : `Add New ${modalType}`}</h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">{isEditing ? `Edit ${modalType === 'user' ? 'User' : 'Hardware Record'}` : `Add New ${modalType === 'user' ? 'User' : 'Hardware Record'}`}</h2>
 
                     <form onSubmit={handleUpdate}>
                         {modalType === 'user' ? (
@@ -464,11 +474,10 @@ const AdminDashboard = ({ setRole }) => {
                                 >
                                     <FaPlus className="mr-2" /> Add User
                                 </button>
-                                {/* Removed file import label to reduce clutter, uncomment if needed */}
-                                {/* <label htmlFor="user-file-import" className="px-6 py-2 rounded-xl bg-green-600 text-white font-semibold flex items-center hover:bg-green-700 transition-all duration-300 shadow-lg cursor-pointer">
-                                    <FaFileImport className="mr-2" /> Import
-                                    <input type="file" id="user-file-import" accept=".xlsx, .xls" onChange={handleUserFileImport} className="hidden" ref={userFileInputRef} />
-                                </label> */}
+                                <label htmlFor="user-file-import" className={`px-6 py-2 rounded-xl bg-green-600 text-white font-semibold flex items-center transition-all duration-300 shadow-lg cursor-pointer ${loadingType === 'user' ? 'opacity-60' : 'hover:bg-green-700'}`}>
+                                    {loadingType === 'user' ? 'Importing...' : <><FaFileImport className="mr-2" /> Import</>}
+                                    <input type="file" id="user-file-import" accept=".xlsx, .xls" onChange={handleUserFileImport} className="hidden" ref={userFileInputRef} disabled={loadingType === 'user'} />
+                                </label>
                                 <button
                                     onClick={handleExportUsers}
                                     className="px-6 py-2 rounded-xl bg-blue-600 text-white font-semibold flex items-center hover:bg-blue-700 transition-all duration-300 shadow-lg"
@@ -484,9 +493,9 @@ const AdminDashboard = ({ setRole }) => {
                                 >
                                     <FaPlus className="mr-2" /> Add Hardware
                                 </button>
-                                <label htmlFor="hardware-file-import" className="px-6 py-2 rounded-xl bg-green-600 text-white font-semibold flex items-center hover:bg-green-700 transition-all duration-300 shadow-lg cursor-pointer">
-                                    <FaFileImport className="mr-2" /> Import
-                                    <input type="file" id="hardware-file-import" accept=".xlsx, .xls" onChange={handleHardwareFileImport} className="hidden" ref={hardwareFileInputRef} /> 
+                                <label htmlFor="hardware-file-import" className={`px-6 py-2 rounded-xl bg-green-600 text-white font-semibold flex items-center transition-all duration-300 shadow-lg cursor-pointer ${loadingType === 'hardware' ? 'opacity-60' : 'hover:bg-green-700'}`}>
+                                    {loadingType === 'hardware' ? 'Importing...' : <><FaFileImport className="mr-2" /> Import</>}
+                                    <input type="file" id="hardware-file-import" accept=".xlsx, .xls" onChange={handleHardwareFileImport} className="hidden" ref={hardwareFileInputRef} disabled={loadingType === 'hardware'}/> 
                                 </label>
                                 <button
                                     onClick={handleExportHardware} 
@@ -506,7 +515,7 @@ const AdminDashboard = ({ setRole }) => {
                     <div className="mb-6 relative">
                         <input
                             type="text"
-                            placeholder={view === 'users' ? "Filter by mobile number, DOB, name, or email..." : "Filter by item name, serial no, or asset tag..."} 
+                            placeholder={view === 'users' ? "Filter by Compay" : "Filter by item name, serial no, asset tag, or city..."} 
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
                             className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -518,84 +527,77 @@ const AdminDashboard = ({ setRole }) => {
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-100 sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Full Name</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mobile No.</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">DOB</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Village</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email ID</th>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Full Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Mobile No.</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">DOB</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Village/City</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {filteredUsers.length > 0 ? (
-                                        filteredUsers.map(user => (
-                                            <tr key={user._id} className="hover:bg-gray-50 transition-colors duration-200">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.fullName}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.mobileNo}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.dob.split('T')[0]}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.village}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{user.emailId}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <div className="flex space-x-2">
-                                                        <button onClick={() => handleEditClick(user, 'user')} className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors">
-                                                            <FaEdit />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(user._id, 'user')} className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
-                                                            <FaTrash />
-                                                        </button>
+                                        filteredUsers.map((user) => (
+                                            <tr key={user._id} className="hover:bg-indigo-50/50 transition duration-150">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.fullName}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.mobileNo}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.dob ? new Date(user.dob).toLocaleDateString() : 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.village}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div className="flex justify-end space-x-3">
+                                                        <button onClick={() => handleEditClick(user, 'user')} className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-100 transition"><FaEdit /></button>
+                                                        <button onClick={() => handleDelete(user._id, 'user')} className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-100 transition"><FaTrash /></button>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="6" className="py-4 px-6 text-center text-gray-500">No users found.</td>
+                                            <td colSpan="5" className="px-6 py-10 text-center text-gray-500 text-lg">
+                                                No users found matching the filter criteria. 😢
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
                         )}
 
-                        {view === 'hardware' && ( 
+                        {view === 'hardware' && (
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-100 sticky top-0 z-10">
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Item Name</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Serial No.</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Asset Tag</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Manufacturer</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Allocated To</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantity</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Delivery Date</th> 
-                                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Court Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Hardware Name.</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Serial No</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Delivery Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Installation Date</th>
+                                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Source</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredHardware.length > 0 ? ( 
-                                        filteredHardware.map(item => ( 
-                                            <tr key={item._id} className="hover:bg-gray-50 transition-colors duration-200">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.itemName}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.serialNo}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.assetTag}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.manufacturer}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.allocatedTo}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.hardwareCount}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{item.deliveryDate ? item.deliveryDate.split('T')[0] : '-'}</td> 
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <div className="flex space-x-2">
-                                                        <button onClick={() => handleEditClick(item, 'hardware')} className="p-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"> 
-                                                            <FaEdit />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(item._id, 'hardware')} className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"> 
-                                                            <FaTrash />
-                                                        </button>
+                                    {filteredHardware.length > 0 ? (
+                                        filteredHardware.map((item) => (
+                                            <tr key={item._id} className="hover:bg-indigo-50/50 transition duration-150">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{item.courtName}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.hardwareName}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{item.serialNumber}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.deliveryDate ? new Date(item.deliveryDate).toLocaleDateString() : 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.installationDate ? new Date(item.installationDate).toLocaleDateString() : 'N/A'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{item.source}</td>
+
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <div className="flex justify-end space-x-3">
+                                                        {/* <button onClick={() => handleEditClick(item, 'hardware')} className="text-indigo-600 hover:text-indigo-900 p-2 rounded-full hover:bg-indigo-100 transition"><FaEdit /></button> */}
+                                                        <button onClick={() => handleDelete(item._id, 'hardware')} className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-100 transition"><FaTrash /></button>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan="8" className="py-4 px-6 text-center text-gray-500">No hardware records found.</td> 
+                                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500 text-lg">
+                                                No hardware records found matching the filter criteria. 🛠️
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -604,6 +606,8 @@ const AdminDashboard = ({ setRole }) => {
                     </div>
                 </div>
             </div>
+            
+            {/* Modal Renderer */}
             {renderModal()}
         </div>
     );

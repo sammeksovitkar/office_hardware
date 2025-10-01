@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPlus, FaTimesCircle, FaDesktop, FaTrashAlt } from 'react-icons/fa';
+import { FaPlus, FaTimesCircle, FaDesktop, FaTrashAlt, FaBuilding } from 'react-icons/fa'; // Added FaBuilding for company
 import { MdNumbers, MdAddBox } from 'react-icons/md';
 import CoreMetadataForm from './CoreMetadataForm'; // Import the metadata component
 
@@ -33,12 +33,16 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
 );
 
 const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
+    console.log(item,"item")
+    // Note: Assuming the state field for hardware type selection is 'hardwareName'
     const isOther = item.hardwareName === 'Other';
     
     return (
-        <div className="flex space-x-2 mb-3 items-end bg-white p-3 rounded-lg shadow-md border border-gray-100">
+        // Changed to use flex-wrap on smaller screens for better layout
+        <div className="flex flex-wrap md:flex-nowrap gap-2 mb-3 items-end bg-white p-3 rounded-lg shadow-md border border-gray-100">
+            
             {/* Hardware Name Selector */}
-            <div className="flex-1">
+            <div className="w-full sm:w-1/2 md:flex-1">
                 <FormInput label="Hardware Type" id={`hardwareType-${index}`} required icon={FaDesktop}>
                     <select
                         name="hardwareName"
@@ -57,11 +61,12 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
 
             {/* Manual Hardware Name Input (if 'Other' is selected) */}
             {isOther && (
-                <div className="flex-1">
+                // Occupies a flexible space when visible
+                <div className="w-full sm:w-1/2 md:flex-1">
                     <FormInput 
                         label="Specify Hardware" 
                         id={`manualName-${index}`} 
-                        name="manualHardwareName" 
+                        name="manualHardwareName" // This name might need to be adjusted to 'hardwareType' if you only want one field in final state
                         value={item.manualHardwareName || ''} 
                         onChange={(e) => onChange(index, e)} 
                         required={isOther}
@@ -71,16 +76,29 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
             )}
 
             {/* Serial Number Input */}
-            <div className="flex-1">
+            <div className="w-full sm:w-1/2 md:flex-1">
                 <FormInput 
                     label="Serial Number" 
                     id={`serialNumber-${index}`} 
-                    name="serialNumber" 
-                    value={item.serialNumber} 
+                    name="serialNumber" // Use 'serialNo' if matching Mongoose schema strictly
+                    value={item.serialNumber || ''} 
                     onChange={(e) => onChange(index, e)} 
                     required 
                     error={serialErrors[index]} 
                     icon={MdNumbers}
+                />
+            </div>
+            
+            {/* Company/Manufacturer Input (NEWLY ADDED) */}
+            <div className="w-full sm:w-1/2 md:flex-1">
+                <FormInput 
+                    label="Company/Manufacturer" 
+                    id={`company-${index}`} 
+                    name="company" // Name matches Mongoose schema
+                    value={item.company || ''} 
+                    onChange={(e) => onChange(index, e)} 
+                    required 
+                    icon={FaBuilding}
                 />
             </div>
 
@@ -88,7 +106,8 @@ const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
             <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="p-2.5 h-full bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors self-end"
+                // Added a fixed width/height for consistent alignment
+                className="p-2.5 w-10 h-[38px] bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors self-end flex items-center justify-center"
                 title="Remove Item"
             >
                 <FaTrashAlt className="text-sm" />

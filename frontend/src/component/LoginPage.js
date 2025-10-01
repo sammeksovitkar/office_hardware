@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
-import { FaUser, FaLock, FaCalendarAlt, FaSignInAlt, FaShieldAlt } from 'react-icons/fa';
+// Updated icons to include FaLaptop for hardware theme
+import { FaUser, FaLock, FaCalendarAlt, FaSignInAlt, FaLaptop } from 'react-icons/fa';
 
 const LoginPage = ({ setRole }) => {
   const [mobileNo, setMobileNo] = useState('');
@@ -25,6 +26,7 @@ const LoginPage = ({ setRole }) => {
         dob: dob
       };
 
+      // API call remains the same, but the system context is now Hardware Management
       const response = await axios.post(backend_Url+'/api/auth/login', loginPayload);
       const { token, role } = response.data;
 
@@ -66,20 +68,21 @@ const LoginPage = ({ setRole }) => {
     <div className="flex min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 justify-center items-center p-4 sm:p-8 font-sans">
       <ToastContainer />
       <div className="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row w-full max-w-5xl">
-        {/* Left Section (Visuals and Info) */}
+        {/* Left Section (Visuals and Info) - Updated for Hardware Theme */}
         <div className="relative md:w-1/2 p-8 md:p-16 flex flex-col justify-center items-center text-center text-white bg-gradient-to-br from-indigo-600 to-purple-700">
-          <FaShieldAlt className="text-6xl mb-4 text-white" />
-          <h1 className="text-4xl font-extrabold mb-2">Surety Management System</h1>
-          <p className="text-lg mb-6 opacity-80">Your secure gateway for managing surety records.</p>
+          <FaLaptop className="text-6xl mb-4 text-white" />
+          <h1 className="text-4xl font-extrabold mb-2">Hardware Inventory Management</h1>
+          <p className="text-lg mb-6 opacity-80">Your secure portal for tracking and managing IT asset records.</p>
           <div className="absolute inset-0 bg-black opacity-10"></div>
-          <div className="absolute bottom-4 text-xs opacity-60">© 2025 </div>
+          <div className="absolute bottom-4 text-xs opacity-60">© 2025 IT Dept.</div>
         </div>
 
         {/* Right Section (Login Form) */}
         <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Sign In</h2>
+          <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Asset Portal Sign In</h2>
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="flex justify-center space-x-4 mb-4 bg-gray-100 rounded-full p-1">
+              {/* User Login Toggle */}
               <label className={`flex-1 flex items-center justify-center p-2 rounded-full cursor-pointer transition-all duration-300 ${userType === 'user' ? 'bg-indigo-600 text-white shadow' : 'text-gray-600'}`}>
                 <input
                   type="radio"
@@ -89,8 +92,9 @@ const LoginPage = ({ setRole }) => {
                   onChange={() => setUserType('user')}
                   className="hidden"
                 />
-                <span className="font-semibold">User</span>
+                <span className="font-semibold">Staff Login</span>
               </label>
+              {/* Admin Login Toggle */}
               <label className={`flex-1 flex items-center justify-center p-2 rounded-full cursor-pointer transition-all duration-300 ${userType === 'admin' ? 'bg-indigo-600 text-white shadow' : 'text-gray-600'}`}>
                 <input
                   type="radio"
@@ -100,13 +104,14 @@ const LoginPage = ({ setRole }) => {
                   onChange={() => setUserType('admin')}
                   className="hidden"
                 />
-                <span className="font-semibold">Admin</span>
+                <span className="font-semibold">Admin Login</span>
               </label>
             </div>
             
+            {/* Mobile/User ID Input */}
             <div>
               <label htmlFor="mobileNo" className="block text-sm font-medium text-gray-700 mb-1">
-                <FaUser className="inline-block mr-2 text-gray-400" /> Mobile No / User Id.
+                <FaUser className="inline-block mr-2 text-gray-400" /> Employee ID / Mobile No.
               </label>
               <input
                 type="text"
@@ -118,6 +123,7 @@ const LoginPage = ({ setRole }) => {
               />
             </div>
             
+            {/* DOB/Password Input */}
             <div>
               <label htmlFor="dob" className="block text-sm font-medium text-gray-700 mb-1">
                 {userType === 'admin' ? (
@@ -126,7 +132,7 @@ const LoginPage = ({ setRole }) => {
                   </>
                 ) : (
                   <>
-                    <FaCalendarAlt className="inline-block mr-2 text-gray-400" /> Date of Birth
+                    <FaCalendarAlt className="inline-block mr-2 text-gray-400" /> Date of Birth (for verification)
                   </>
                 )}
               </label>
@@ -145,7 +151,7 @@ const LoginPage = ({ setRole }) => {
                 type="submit"
                 className="w-full flex items-center justify-center py-3 px-4 rounded-lg shadow-md text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 transform hover:scale-105"
               >
-                <FaSignInAlt className="mr-2" /> Sign In
+                <FaSignInAlt className="mr-2" /> Log In to Portal
               </button>
             </div>
           </form>

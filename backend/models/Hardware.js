@@ -9,12 +9,9 @@ const HardwareSchema = new mongoose.Schema({
         required: [true, 'Court Name is required'],
         trim: true
     },
-    // 2) Company Name (Manufacturer) - If this whole kit came from one company
-    companyName: {
-        type: String,
-        required: [true, 'Company Name is required'],
-        trim: true
-    },
+    
+    // *** REMOVED: companyName field (formerly #2) ***
+    
     // 3) From whom did it come? (Source/Vendor)
     source: {
         type: String,
@@ -36,6 +33,12 @@ const HardwareSchema = new mongoose.Schema({
                 type: String,
                 // unique: true // This is complex for arrays, better handled with a separate index creation
                 required: [true, 'Serial Number is required in the array'],
+                trim: true
+            },
+            // The manufacturer of this specific item remains here
+            company: { 
+                type: String,
+                required: [true, 'Company/Manufacturer is required for this item'],
                 trim: true
             }
             // You can add item-specific details here if needed
@@ -71,9 +74,9 @@ const HardwareSchema = new mongoose.Schema({
 
     // 8) Employee Allocated (Links to a User or Employee model)
     employeeAllocated: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
+        type:String,
+        // ref: 'User',
+        // default: null
     },
     // 9) Tracking the Admin/User who created this record
     user: {
@@ -85,8 +88,7 @@ const HardwareSchema = new mongoose.Schema({
     timestamps: true 
 });
 
-// IMPORTANT: If you use OPTION B, you should manually define a unique index on the array field 
-// to ensure serial numbers are unique across all documents.
+// IMPORTANT: Ensure serial numbers are unique across all documents.
 HardwareSchema.index({ 'items.serialNo': 1 }, { unique: true, sparse: true });
 
 
