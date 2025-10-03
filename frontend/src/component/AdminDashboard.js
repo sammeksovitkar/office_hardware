@@ -28,25 +28,30 @@ const AdminDashboard = ({ setRole }) => {
 
     const userFileInputRef = useRef(null);
     const hardwareFileInputRef = useRef(null); // RENAMED REF
+const rawStations = process.env.REACT_APP_COURT_STATIONS || '';
+const policeStations = rawStations
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
 
-    const policeStations = [
-        "Malegaon",
-    "Nandgaon",
-    "Satana",
-    "Niphad",
-    "Yeola",
-    "Chandwad",
-    "Pimpalgaon (B)",
-    "Manmad City",
-    "Manmad (Rly)",
-    "Sinnar",
-    "Dindori",
-    "Kalwan",
-    "Nashik-Road",
-    "Vehicle Section", // Changed "Motor Vehicle Court" to "Vehicle Section" for brevity
-    "Malegaon Sessions Division", // Kept specific functional names for clarity
-    "Niphad Sessions Division", 
-    "Nashik Dist Court"  ];
+    // [
+    //     "Malegaon",
+    // "Nandgaon",
+    // "Satana",
+    // "Niphad",
+    // "Yeola",
+    // "Chandwad",
+    // "Pimpalgaon (B)",
+    // "Manmad City",
+    // "Manmad (Rly)",
+    // "Sinnar",
+    // "Dindori",
+    // "Kalwan",
+    // "Nashik-Road",
+    // "Vehicle Section", // Changed "Motor Vehicle Court" to "Vehicle Section" for brevity
+    // "Malegaon Sessions Division", // Kept specific functional names for clarity
+    // "Niphad Sessions Division", 
+    // "Nashik Dist Court"  ];
 
     const config = {
         headers: { 'x-auth-token': token },

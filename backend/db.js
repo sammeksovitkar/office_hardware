@@ -10,7 +10,7 @@ const connectDB = async () => {
     throw new Error("MONGO_URI is not defined");
   }
 
-  const db = await mongoose.connect(process.env.MONGO_URI, {
+  const db = await mongoose.connect(process.env.MONGO_URI+process.env.DIST, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });

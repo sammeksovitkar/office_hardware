@@ -26,12 +26,14 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
     </div>
 );
 
-const COURT_STATIONS = [
-    "Malegaon", "Nandgaon", "Satana", "Niphad", "Yeola", "Chandwad", "Pimpalgaon (B)", 
-    "Manmad City", "Manmad (Rly)", "Sinnar", "Dindori", "Kalwan", "Nashik-Road",
-    "Vehicle Section", "Malegaon Sessions Division", "Niphad Sessions Division", 
-    "Nashik Dist Court"
-];
+// const COURT_STATIONS = [
+//     "Malegaon", "Nandgaon", "Satana", "Niphad", "Yeola", "Chandwad", "Pimpalgaon (B)", 
+//     "Manmad City", "Manmad (Rly)", "Sinnar", "Dindori", "Kalwan", "Nashik-Road",
+//     "Vehicle Section", "Malegaon Sessions Division", "Niphad Sessions Division", 
+//     "Nashik Dist Court"
+// ];
+const COURT_STATIONS = process.env.COURT_STATIONS
+
 
 // New constant for Source suggestions
 const SOURCE_OPTIONS = [

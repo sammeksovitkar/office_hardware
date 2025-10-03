@@ -17,26 +17,33 @@ import HardwareList from './HardwareList';
 export const HARDWARE_OPTIONS = [
     'CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'
 ];
+const rawStations = process.env.REACT_APP_COURT_STATIONS || '';
+const court_List = rawStations
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
 
-export const COURT_STATIONS = [
-    "Malegaon",
-    "Nandgaon",
-    "Satana",
-    "Niphad",
-    "Yeola",
-    "Chandwad",
-    "Pimpalgaon (B)",
-    "Manmad City",
-    "Manmad (Rly)",
-    "Sinnar",
-    "Dindori",
-    "Kalwan",
-    "Nashik-Road",
-    "Vehicle Section",
-    "Malegaon Sessions Division",
-    "Niphad Sessions Division",
-    "Nashik Dist Court"
-];
+export const COURT_STATIONS = court_List || ''
+
+// [
+//     "Malegaon",
+//     "Nandgaon",
+//     "Satana",
+//     "Niphad",
+//     "Yeola",
+//     "Chandwad",
+//     "Pimpalgaon (B)",
+//     "Manmad City",
+//     "Manmad (Rly)",
+//     "Sinnar",
+//     "Dindori",
+//     "Kalwan",
+//     "Nashik-Road",
+//     "Vehicle Section",
+//     "Malegaon Sessions Division",
+//     "Niphad Sessions Division",
+//     "Nashik Dist Court"
+// ];
 
 // ----------------------------------------------------------------
 // --- Utility Components (Refined for Admin Dashboard Look) ---
@@ -336,6 +343,7 @@ const UserDashboard = () => {
     };
 
     const handleDelete = async (id, parentId) => {
+        console.log(id,parentId,"td")
         if (!id || !parentId) {
             showMessage("Error: Missing Item ID or Parent ID for deletion.", 'error');
             return;
@@ -543,6 +551,7 @@ const UserDashboard = () => {
                     <div className="flex flex-col">
                         <span className="text-xs text-gray-500">Logged in as</span>
                         <span className="font-semibold text-gray-800">{user?.fullName || 'User'}</span>
+                         <span className="font-semibold text-gray-800">{user?.village || 'User'}</span>
                     </div>
                 </div>
                 <nav className="flex-1 space-y-2">

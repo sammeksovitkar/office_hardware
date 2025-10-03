@@ -1,29 +1,23 @@
-import React, { useState, useCallback, useMemo } from 'react'; // ADDED useState, useCallback, useMemo
-import { FaPlus, FaTimesCircle, FaDesktop, FaTrashAlt, FaBuilding } from 'react-icons/fa';
-import { MdNumbers, MdAddBox, MdFactory } from 'react-icons/md'; // Imported MdFactory
-import CoreMetadataForm from './CoreMetadataForm'; // Import the metadata component
+import React, { useState, useCallback, useMemo } from 'react';
+import { FaPlus, FaTimesCircle, FaDesktop, FaTrashAlt, FaTag, FaCheckCircle, FaClipboardList, FaBuilding, FaUserTie, FaCalendarAlt, FaTrashRestore } from 'react-icons/fa';
+import { MdNumbers, MdAddBox, MdFactory, MdOutlineSettings, MdSecurity } from 'react-icons/md';
 
-// --- Constants (Re-defined for context) ---
-const HARDWARE_OPTIONS = [
-    'CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'
-];
+// --- Constants (Simplified for the component) ---
+// NOTE: Ensure COURT_STATIONS is correctly defined in your environment or main file.
+const COURT_STATIONS = process.env.COURT_STATIONS ? process.env.COURT_STATIONS.split(',').map(s => s.trim()).filter(s => s.length > 0) : ["Nashik Dist Court", "Yeola", "Sinnar"];
+const HARDWARE_OPTIONS = ['CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'];
+const MANUFACTURER_OPTIONS = ["DELL", "HP", "SAMSUNG", "LENOVO"];
+const SOURCE_OPTIONS = ["HIGHCOURT", "ECOURT PROJECT", "District Judge Office"];
 
-const MANUFACTURER_OPTIONS = [
-    "DELL", 
-    "HP", 
-    "SAMSUNG", 
-    "KYOCRA",
-    "CANON",
-    "FUJITSU",
-    "LENOVO", 
-    "EPSON"   
-];
+// --- Utility Components (Space-Reduced) ---
 
-// --- Utility Components (Re-defined for context) ---
-const FormInput = ({ label, id, name, value, onChange, type = 'text', required = false, error, children, icon: Icon }) => (
-    <div className="flex flex-col mb-2"> 
-        <label htmlFor={id} className="text-xs font-medium text-gray-700 flex items-center mb-0.5"> 
-            {Icon && <Icon className="mr-2 text-indigo-500 text-sm" />}
+// Custom Form Input with compact design
+const FormInput = ({ label, id, name, value, onChange, type = 'text', required = false, error, children, icon: Icon, placeholder }) => (
+    // Reduced mb-4 to mb-3 for less vertical space
+    <div className="flex flex-col mb-3"> 
+        {/* Reduced label size and margin */}
+        <label htmlFor={id} className="text-xs font-bold text-gray-700 flex items-center mb-0.5"> 
+            {Icon && <Icon className="mr-1 text-indigo-600 text-sm" />}
             {label} {required && <span className="text-red-500 ml-1">*</span>}
         </label>
         <div className="relative">
@@ -35,7 +29,9 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
                     value={value}
                     onChange={onChange}
                     required={required}
-                    className={`w-full p-1.5 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md transition-all duration-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm`}
+                    placeholder={placeholder}
+                    // Reduced padding (p-2) and text size (text-sm) for compact look
+                    className={`w-full p-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md transition-all duration-150 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm`}
                 />
             )}
         </div>
@@ -43,33 +39,20 @@ const FormInput = ({ label, id, name, value, onChange, type = 'text', required =
     </div>
 );
 
-// NEW COMPONENT: Manufacturer Selector with Custom Auto-Suggest Logic (FINAL FIX)
+// Manufacturer Selector (Compact design)
 const ManufacturerSelector = React.memo(({ index, value, onChange, required }) => {
     const [showSuggestions, setShowSuggestions] = useState(false);
-
-    const handleManufacturerChange = (e) => {
-        onChange(index, e);
-        setShowSuggestions(true);
-    };
-
-    // Callback to set the value and hide the suggestions
+    const handleManufacturerChange = (e) => { onChange(index, e); setShowSuggestions(true); };
     const selectManufacturer = useCallback((manufacturer) => {
         const syntheticEvent = { target: { name: 'company', value: manufacturer } };
         onChange(index, syntheticEvent);
         setShowSuggestions(false);
     }, [index, onChange]);
 
-    // Memoize the filtered list to avoid re-calculating on every render
-    const filteredManufacturers = useMemo(() => {
-        return MANUFACTURER_OPTIONS.filter(option =>
-            option.toLowerCase().includes(value?.toLowerCase() || '')
-        );
-    }, [value]);
-
     return (
-        <div className="flex flex-col mb-2"> 
-            <label htmlFor={`company-${index}`} className="text-xs font-medium text-gray-700 flex items-center mb-0.5"> 
-                <MdFactory className="mr-2 text-indigo-500 text-sm" />
+        <div className="flex flex-col mb-3"> 
+            <label htmlFor={`company-${index}`} className="text-xs font-bold text-gray-700 flex items-center mb-0.5"> 
+                <MdFactory className="mr-1 text-indigo-600 text-sm" />
                 Company/Manufacturer {required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <div className="relative">
@@ -80,121 +63,84 @@ const ManufacturerSelector = React.memo(({ index, value, onChange, required }) =
                     value={value || ''} 
                     onChange={handleManufacturerChange}
                     onFocus={() => setShowSuggestions(true)}
-                    // Use a slight delay on blur to allow the suggestion's onMouseDown event to fire first
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 150)} 
                     required={required}
-                    placeholder="Select or type manufacturer..."
-                    className="w-full p-1.5 border border-gray-300 rounded-md transition-all duration-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm text-sm"
+                    placeholder="Select or type..."
+                    className="w-full p-2 border border-gray-300 rounded-md transition-all duration-150 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 shadow-sm text-sm"
                     autoComplete="off"
+                    list="manufacturer-suggestions-list"
                 />
-                
-                {showSuggestions && (filteredManufacturers.length > 0 || value) && (
-                    <ul className="absolute z-50 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto mt-0.5">
-                        {filteredManufacturers.length > 0 ? (
-                            filteredManufacturers.map(option => (
-                                <li 
-                                    key={option} 
-                                    // CRITICAL FIX: Use onMouseDown and preventDefault to stop the blur event from firing and hiding the list prematurely.
-                                    onMouseDown={(e) => {
-                                        e.preventDefault(); 
-                                        selectManufacturer(option);
-                                    }}
-                                    className="px-3 py-1 text-sm cursor-pointer hover:bg-indigo-100 transition-colors duration-150"
-                                >
-                                    {option}
-                                </li>
-                            ))
-                        ) : (
-                            <li className="px-3 py-1 text-sm text-gray-500 italic">
-                                Type custom manufacturer name.
-                            </li>
-                        )}
-                    </ul>
-                )}
+                <datalist id="manufacturer-suggestions-list">
+                    {MANUFACTURER_OPTIONS.map(option => <option key={option} value={option} />)}
+                </datalist>
             </div>
         </div>
     );
 });
 
 
+// Form for a single hardware item (Optimized Grid)
 const FormMultiItem = ({ index, item, onChange, onRemove, serialErrors }) => {
     const isOther = item.hardwareName === 'Other';
     
     return (
-        <div className="flex flex-wrap md:flex-nowrap gap-2 mb-3 items-end bg-white p-3 rounded-lg shadow-md border border-gray-100">
+        // Reduced padding (p-4) and margin (mb-3)
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-4 mb-3 items-start bg-white rounded-lg shadow-md border border-gray-300 relative">
             
+            {/* Asset tag is smaller */}
+            <div className="absolute top-0 left-0 px-2 py-1 text-xs font-bold text-blue-800 bg-blue-100 rounded-br-lg rounded-tl-md border-b border-r border-blue-300">
+                ASSET #{index + 1}
+            </div>
+
             {/* Hardware Name Selector */}
-            <div className="w-full sm:w-1/2 md:flex-1">
-                <FormInput label="Hardware Type" id={`hardwareType-${index}`} required icon={FaDesktop}>
+            <div className="col-span-1 lg:col-span-1 mt-4 lg:mt-0">
+                <FormInput label="Type" id={`hardwareType-${index}`} required icon={FaTag}>
                     <select
                         name="hardwareName"
                         value={item.hardwareName}
                         onChange={(e) => onChange(index, e)}
                         required
-                        className="w-full p-1.5 border border-gray-300 rounded-md shadow-sm text-sm appearance-none bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-sm appearance-none bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
-                        <option value="">Select Hardware</option>
-                        {HARDWARE_OPTIONS.map((option) => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
+                        <option value="">Select Type</option>
+                        {HARDWARE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                     </select>
                 </FormInput>
             </div>
 
-            {/* Manual Hardware Name Input (if 'Other' is selected) */}
+            {/* Manual Hardware Name Input */}
             {isOther && (
-                <div className="w-full sm:w-1/2 md:flex-1">
-                    <FormInput 
-                        label="Specify Hardware" 
-                        id={`manualName-${index}`} 
-                        name="manualHardwareName"
-                        value={item.manualHardwareName || ''} 
-                        onChange={(e) => onChange(index, e)} 
-                        required={isOther}
-                        icon={FaDesktop}
-                    />
+                <div className="col-span-1">
+                    <FormInput label="Specify" id={`manualName-${index}`} name="manualHardwareName" value={item.manualHardwareName || ''} onChange={(e) => onChange(index, e)} required={isOther} icon={FaDesktop} />
                 </div>
             )}
-
+            
             {/* Serial Number Input */}
-            <div className="w-full sm:w-1/2 md:flex-1">
-                <FormInput 
-                    label="Serial Number" 
-                    id={`serialNumber-${index}`} 
-                    name="serialNumber"
-                    value={item.serialNumber || ''} 
-                    onChange={(e) => onChange(index, e)} 
-                    required 
-                    error={serialErrors[index]} 
-                    icon={MdNumbers}
-                />
+            <div className={`col-span-1 ${isOther ? '' : 'lg:col-span-2'} `}>
+                <FormInput label="Serial No." id={`serialNumber-${index}`} name="serialNumber" value={item.serialNumber || ''} onChange={(e) => onChange(index, e)} required error={serialErrors[index]} icon={MdNumbers} />
             </div>
             
-            {/* Company/Manufacturer Input (CUSTOM SELECTOR) */}
-            <div className="w-full sm:w-1/2 md:flex-1">
-                <ManufacturerSelector 
-                    index={index}
-                    value={item.company}
-                    onChange={onChange}
-                    required={true}
-                />
+            {/* Company/Manufacturer Input */}
+            <div className="col-span-1">
+                <ManufacturerSelector index={index} value={item.company} onChange={onChange} required={true} />
             </div>
 
-            {/* Remove Button */}
+            {/* Remove Button (Smaller) */}
             <button
                 type="button"
                 onClick={() => onRemove(index)}
-                className="p-2.5 w-10 h-[38px] bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors self-end flex items-center justify-center"
+                className="p-2 w-full lg:w-auto bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition-colors flex items-center justify-center text-sm mt-auto"
                 title="Remove Item"
             >
-                <FaTrashAlt className="text-sm" />
+                <FaTrashAlt className="mr-1 text-xs" /> Remove
             </button>
         </div>
     );
 };
-// --- End Utility Components ---
 
-const HardwareModal = ({ user,
+// --- MERGED & FINALIZED COMPONENT ---
+
+const HardwareDetails = ({ user,
     formData, 
     handleMainFormChange, 
     handleHardwareItemChange, 
@@ -204,63 +150,126 @@ const HardwareModal = ({ user,
     serialErrors,
     onClose 
 }) => {
+    
+    // Core Metadata Logic
+    const courtNameValue = formData.courtName || user?.village || "";
+    const isFieldDisabled = !!user?.village; 
+
+    useState(() => {
+        if (isFieldDisabled && courtNameValue && formData.courtName !== courtNameValue) {
+            handleMainFormChange({ target: { name: 'courtName', value: courtNameValue } });
+        }
+    }, [user, formData.courtName, isFieldDisabled, courtNameValue, handleMainFormChange]);
+
+    // Check submission readiness
+    const isMetadataComplete = formData.courtName && formData.source && formData.deliveryDate && formData.installationDate;
+    const hasHardwareErrors = Object.keys(serialErrors).length > 0;
+
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-6xl max-h-[90vh] transform transition-all duration-300 scale-100"> 
+        // *** Main container is now fixed to reduce form size and prevent scroll ***
+        <div className="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+            
+            {/* Reduced max-w-7xl to max-w-6xl for narrower form */}
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[98vh] transform transition-all duration-300 flex flex-col border-4 border-gray-100"> 
                 
                 {/* Modal Header */}
-                <div className="flex justify-between items-start mb-4 border-b pb-3">
-                    <h2 className="text-2xl font-extrabold text-indigo-700 flex items-center pt-1">
-                        <FaPlus className="mr-3 text-xl"/> Create New Hardware Records
-                    </h2>
-                    
-                    {/* Action Buttons */}
-                    <div className="flex space-x-3 items-center">
-                        <button 
-                            type="submit" 
-                            form="hardwareForm"
-                            className="px-4 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-xl shadow-indigo-400/70 text-sm disabled:bg-indigo-400 disabled:shadow-none"
-                        >
-                            <FaPlus className="inline mr-2 text-xs"/> **Submit Records**
-                        </button>
-
-                        <button 
-                            type="button" 
-                            onClick={onClose} 
-                            className="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-400 transition-colors shadow-md text-sm border border-gray-400"
-                        >
-                            Cancel
-                        </button>
+                <div className="p-4 sticky top-0 bg-blue-700 text-white rounded-t-lg z-20 shadow-md">
+                    <div className="flex justify-between items-start">
+                        {/* Form Name: Hardware Details */}
+                        <h2 className="text-xl font-extrabold flex items-center">
+                            <FaClipboardList className="mr-2 text-lg"/> Hardware Details Form
+                        </h2>
                         
-                        <button onClick={onClose} className="text-gray-400 hover:text-red-600 transition-colors text-xl p-1 ml-2">
+                        <button onClick={onClose} className="text-blue-200 hover:text-white transition-colors text-xl p-1 rounded-full hover:bg-blue-600">
                             <FaTimesCircle />
                         </button>
                     </div>
                 </div>
 
-                {/* Form Body */}
-                <form onSubmit={handleSubmitHardware} id="hardwareForm">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6"> 
+                {/* Form Body - SCROLLS ONLY IF NECESSARY (max-h is controlled by parent) */}
+                <form 
+                    onSubmit={handleSubmitHardware} 
+                    id="hardwareForm" 
+                    // Reduced padding (p-4) and spacing (space-y-6)
+                    className="flex-1 overflow-y-auto p-4 space-y-6 bg-gray-50"
+                >
+                    {/* SECTION 1: CORE METADATA (Compact Grid) */}
+                    {/* Reduced padding (p-4) and border-t-2 */}
+                    <div className="bg-white p-4 rounded-lg shadow-lg border-t-2 border-blue-500">
+                        {/* Reduced heading size and margin */}
+                        <h3 className="text-lg font-extrabold text-blue-800 mb-4 pb-2 border-b-2 border-gray-200 flex items-center">
+                            <MdOutlineSettings className="mr-2 text-xl text-blue-500"/> 1. General Record Metadata
+                        </h3>
                         
-                        {/* Column 1: Core Metadata (NEW COMPONENT) */}
-                        <CoreMetadataForm user={user}
-                            formData={formData}
-                            handleMainFormChange={handleMainFormChange}
-                        />
-                        
-                        {/* Column 2: Dynamic Hardware Items */}
-                        <div className="bg-gray-100 p-4 rounded-xl shadow-inner border border-gray-200 order-1 lg:order-2 max-h-[70vh] overflow-y-auto">
-                            <div className="flex justify-between items-center mb-3 border-b border-gray-300 pb-1">
-                                <h3 className="text-md font-bold text-gray-800 flex items-center"><MdAddBox className="mr-2"/> Hardware Items</h3>
-                                <button
-                                    type="button"
-                                    onClick={addHardwareItem}
-                                    className="px-3 py-1 text-xs bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors flex items-center shadow-md"
-                                >
-                                    <FaPlus className="mr-1 text-xs"/> Add Item
-                                </button>
-                            </div>
+                        {/* Increased grid density to 4 columns */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2">
                             
+                            {/* Court Name Selector (Integrated) */}
+                            <FormInput label="Court Name" id="courtName" name="courtName" value={courtNameValue} onChange={handleMainFormChange} required icon={FaBuilding}>
+                                <select 
+                                    id="courtName" name="courtName" value={courtNameValue} 
+                                    onChange={isFieldDisabled ? undefined : handleMainFormChange} required disabled={isFieldDisabled} 
+                                    className={`w-full p-2 border border-gray-300 rounded-md shadow-sm text-sm appearance-none ${isFieldDisabled ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500'}`}
+                                >
+                                    {isFieldDisabled ? (<option value={courtNameValue}>{courtNameValue}</option>) : (
+                                        <>
+                                            <option value="">Select Court *</option>
+                                            {COURT_STATIONS.map((court) => <option key={court} value={court}>{court}</option>)}
+                                        </>
+                                    )}
+                                </select>
+                            </FormInput>
+                            
+                            {/* Source */}
+                            <FormInput label="Source" id="source" name="source" value={formData.source} onChange={handleMainFormChange} required icon={FaUserTie}>
+                                <input type="text" id="source" name="source" value={formData.source} onChange={handleMainFormChange} required list="source-suggestions" placeholder="e.g., HIGHCOURT" className="w-full p-2 border border-gray-300 rounded-md shadow-sm text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
+                                <datalist id="source-suggestions">{SOURCE_OPTIONS.map(option => <option key={option} value={option} />)}</datalist>
+                            </FormInput>
+
+                            {/* Delivery Date */}
+                            <FormInput label="Delivery Date" id="deliveryDate" name="deliveryDate" value={formData.deliveryDate} onChange={handleMainFormChange} type="date" required icon={FaCalendarAlt}/>
+                            
+                            {/* Installation Date */}
+                            <FormInput label="Install Date" id="installationDate" name="installationDate" value={formData.installationDate} onChange={handleMainFormChange} type="date" required icon={FaCalendarAlt}/>
+                            
+                            {/* Company Name */}
+                            <FormInput label="Vendor Company" id="companyName" name="companyName" value={formData.companyName} onChange={handleMainFormChange} icon={FaBuilding} placeholder="e.g., CMS Computers"/>
+                            
+                            {/* Employee Allocated */}
+                            <FormInput label="Employee (Optional)" id="employeeAllocated" name="employeeAllocated" value={formData.employeeAllocated} onChange={handleMainFormChange} icon={FaUserTie} placeholder="Full Name or ID"/>
+                            
+                            {/* Dead Stock Register Sr. No. */}
+                            <FormInput label="Dead Stock Sr. No." id="deadStockRegSrNo" name="deadStockRegSrNo" value={formData.deadStockRegSrNo} onChange={handleMainFormChange} icon={MdSecurity}/>
+                            
+                            {/* Dead Stock Book Page No. */}
+                            <FormInput label="Dead Stock Page No." id="deadStockBookPageNo" name="deadStockBookPageNo" value={formData.deadStockBookPageNo} onChange={handleMainFormChange} icon={MdNumbers}/>
+                        </div>
+                    </div>
+                    
+                    {/* SECTION 2: DYNAMIC HARDWARE ITEMS */}
+                    {/* Reduced padding (p-4) and border-t-2 */}
+                    <div className="bg-gray-100 p-4 rounded-lg shadow-lg border-t-2 border-indigo-500">
+                        <div className="flex justify-between items-center mb-4 pb-2 border-b-2 border-gray-300">
+                            {/* Reduced heading size */}
+                            <h3 className="text-lg font-extrabold text-indigo-800 flex items-center">
+                                <MdAddBox className="mr-2 text-xl text-indigo-500"/> 2. Asset Details
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={addHardwareItem}
+                                className="px-4 py-2 text-sm bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 transition-colors flex items-center shadow-md"
+                            >
+                                <FaPlus className="mr-1 text-xs"/> Add Asset
+                            </button>
+                        </div>
+                        
+                        {formData.hardwareItems.length === 0 && (
+                            <div className="p-4 text-center text-gray-600 italic border-2 border-dashed border-gray-300 rounded-lg bg-white">
+                                <p className="text-sm font-medium">Click "Add Asset" to start entry.</p>
+                            </div>
+                        )}
+
+                        <div className="space-y-3">
                             {formData.hardwareItems.map((item, index) => (
                                 <FormMultiItem
                                     key={index}
@@ -274,9 +283,28 @@ const HardwareModal = ({ user,
                         </div>
                     </div>
                 </form>
+
+                {/* Modal Footer (Action Bar) */}
+                <div className="p-3 bg-white border-t border-gray-200 sticky bottom-0 rounded-b-lg z-20 flex justify-end space-x-3 shadow-top-md">
+                     <button 
+                        type="button" 
+                        onClick={onClose} 
+                        className="px-6 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400 transition-colors shadow-sm text-sm border border-gray-400"
+                    >
+                        Close
+                    </button>
+                    <button 
+                        type="submit" 
+                        form="hardwareForm"
+                        disabled={!isMetadataComplete || hasHardwareErrors || formData.hardwareItems.length === 0}
+                        className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg text-sm disabled:bg-gray-400 disabled:shadow-none disabled:cursor-not-allowed flex items-center"
+                    >
+                        <FaCheckCircle className="inline mr-2 text-xs"/> SUBMIT
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
-export default HardwareModal;
+export default HardwareDetails;
