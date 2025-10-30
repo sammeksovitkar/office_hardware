@@ -30,7 +30,7 @@ app.use('/api/user', userRoutes);
 
 // Root route for API status check
 app.get('/', (req, res) => {
-    res.send('Surety Member Management Backend API is running.');
+    res.send('Hardware Api Running.');
 });
 
 
