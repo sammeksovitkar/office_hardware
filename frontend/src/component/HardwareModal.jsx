@@ -167,7 +167,8 @@ const HardwareDetails = ({ user,
     }, [user, formData.courtName, isFieldDisabled, courtNameValue, handleMainFormChange]);
 
     // Check submission readiness
-    const isMetadataComplete = formData.courtName && formData.source && formData.deliveryDate && formData.installationDate;
+    const isMetadataComplete = formData.courtName && formData.source 
+    // && formData.deliveryDate && formData.installationDate;
     const hasHardwareErrors = Object.keys(serialErrors).length > 0;
 
     return (
@@ -232,10 +233,10 @@ const HardwareDetails = ({ user,
                             </FormInput>
 
                             {/* Delivery Date */}
-                            <FormInput label="Delivery Date" id="deliveryDate" name="deliveryDate" value={formData.deliveryDate} onChange={handleMainFormChange} type="date" required icon={FaCalendarAlt}/>
+                            <FormInput label="Delivery Date" id="deliveryDate" name="deliveryDate" value={formData.deliveryDate} onChange={handleMainFormChange} type="date"  icon={FaCalendarAlt}/>
                             
                             {/* Installation Date */}
-                            <FormInput label="Install Date" id="installationDate" name="installationDate" value={formData.installationDate} onChange={handleMainFormChange} type="date" required icon={FaCalendarAlt}/>
+                            <FormInput label="Install Date" id="installationDate" name="installationDate" value={formData.installationDate} onChange={handleMainFormChange} type="date"  icon={FaCalendarAlt}/>
                             
                             {/* Company Name */}
                             <FormInput label="Vendor Company" id="companyName" name="companyName" value={formData.companyName} onChange={handleMainFormChange} icon={FaBuilding} placeholder="e.g., CMS Computers"/>
