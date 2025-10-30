@@ -37,11 +37,11 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000; // Use port 5000 or whatever is in your .env file
 
 // Start the server only when the file is run directly (not when imported by Vercel)
-// if (require.main === module) {
-//     app.listen(PORT, () => {
-//         console.log(`Server is running on port ${PORT}`);
-//         console.log(`Local URL: http://localhost:${PORT}`);
-//     });
-// }
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+        console.log(`Local URL: http://localhost:${PORT}`);
+    });
+}
 // The key for Vercel: export the Express app as a serverless function
 module.exports = app;

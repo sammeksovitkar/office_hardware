@@ -4,9 +4,14 @@ import { MdNumbers, MdAddBox, MdFactory, MdOutlineSettings, MdSecurity } from 'r
 
 // --- Constants (Simplified for the component) ---
 // NOTE: Ensure COURT_STATIONS is correctly defined in your environment or main file.
-const COURT_STATIONS = process.env.COURT_STATIONS ? process.env.COURT_STATIONS.split(',').map(s => s.trim()).filter(s => s.length > 0) : ["Nashik Dist Court", "Yeola", "Sinnar"];
+const rawStations = process.env.REACT_APP_COURT_STATIONS || '';
+const court_List = rawStations
+    .split(',')
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+const COURT_STATIONS = process.env.COURT_STATIONS ? process.env.COURT_STATIONS.split(',').map(s => s.trim()).filter(s => s.length > 0) : court_List;
 const HARDWARE_OPTIONS = ['CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'];
-const MANUFACTURER_OPTIONS = ["DELL", "HP", "SAMSUNG", "LENOVO"];
+const MANUFACTURER_OPTIONS = ["DELL", "HP", "SAMSUNG", "LENOVO","CANON","KYOCERA"];
 const SOURCE_OPTIONS = ["HIGHCOURT", "ECOURT PROJECT", "District Judge Office"];
 
 // --- Utility Components (Space-Reduced) ---

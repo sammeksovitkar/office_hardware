@@ -51,6 +51,7 @@ exports.login = async (req, res) => {
     // Assuming 'user.role' is defined in your User model
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token, role: user.role });
+    // console.log(token,"token")
 
   } catch (err) {
     console.error('Login error:', err.message); 

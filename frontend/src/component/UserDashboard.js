@@ -160,6 +160,7 @@ const UserDashboard = () => {
 
     const [user, setUser] = useState(null);
     const [hardwareRecords, setHardwareRecords] = useState([]);
+    const [userCourtStation, setUserCourtStation] = useState(null); // <--- NEW STATE
 
     // 👇️ FIX 1: Ensure initialFormData includes 'company' for multi-item forms
     const initialFormData = {
@@ -197,25 +198,52 @@ const UserDashboard = () => {
 
     useEffect(() => {
         fetchUserData();
-        fetchHardwareRecords();
+        // fetchHardwareRecords();
     }, []);
 
     // --- Data Fetching ---
 
-    const fetchUserData = async () => {
+ const fetchUserData = async () => {
         try {
             const res = await axios.get(backend_Url + '/api/user/me', config);
-            setUser(res.data);
+            const userData = res.data;
+            setUser(userData);
+            // 👇️ Set the user's court station
+            setUserCourtStation(userData.village); 
+            
+            // Pass the court station to fetch records
+            fetchHardwareRecords(userData.village); 
         } catch (err) {
             console.error('Failed to fetch user data');
+            showMessage('Failed to retrieve user information.', 'error');
+            // If user fetch fails, treat it as null for Admin fallback or error state
+            setUserCourtStation(null); // Ensure state is cleared or set to null
+            fetchHardwareRecords(null);
         }
     };
+const fetchHardwareRecords = async (userCourt = null) => {
+        let apiUrl = '';
+        
+        // **STRICT FIX:** Only call '/allhardware' if the userCourt is EXPLICITLY the admin court.
+        // If userCourt is null/undefined or any other court, we default to the restricted '/hardware' view.
+        // However, since we want to restrict the view for all non-admin users, we can be more direct.
+        
+        if (userCourt === 'Nashik Dist Court') {
+            // Admin or broad access view
+            apiUrl = backend_Url + '/api/user/allhardware';
+        } else {
+            // User at a specific court (e.g., Malegaon, Nandgaon, etc.)
+            // OR if userCourt is null (in a safety fallback scenario)
+            // This is the restricted endpoint that filters by the user's associated court/village (via req.user.id on the backend)
+            apiUrl = backend_Url + '/api/user/hardware'; 
+        }
 
-    const fetchHardwareRecords = async () => {
         try {
-            const res = await axios.get(backend_Url + '/api/user/allhardware', config);
+            const res = await axios.get(apiUrl, config);
             setHardwareRecords(res.data);
+            
         } catch (err) {
+            console.error('API Error:', err.response || err);
             showMessage('Failed to fetch hardware records. Please ensure you have the necessary permissions.', 'error');
         }
     };
@@ -257,11 +285,12 @@ const UserDashboard = () => {
     };
 
     // Consolidated Submit/Update Handler
-    const handleSubmitHardware = async (e) => {
+const handleSubmitHardware = async (e) => {
         e.preventDefault();
 
         try {
             const payload = {
+                // ... (your payload data remains the same)
                 courtName: formData.courtName,
                 companyName: formData.companyName,
                 deliveryDate: formData.deliveryDate,
@@ -273,14 +302,10 @@ const UserDashboard = () => {
 
                 hardwareItems: formData.hardwareItems.map(item => ({
                     _id: formData._id ? item._id : undefined,
-
                     hardwareName: item.hardwareName === 'Other' ? item.manualHardwareName : item.hardwareName,
-
                     serialNumber: item.serialNumber,
-
                     company: item.company,
                 }))
-
             };
 
             if (formData._id && formData.parentId) {
@@ -295,7 +320,11 @@ const UserDashboard = () => {
 
             setFormData(initialFormData);
             setShowModal(false);
-            fetchHardwareRecords();
+            
+            // 👇️ FIX: This line passes the user's court station. 
+            // The fetchHardwareRecords function will use this to call the correct API.
+            fetchHardwareRecords(userCourtStation); 
+            
         } catch (err) {
             const errMsg = err.response?.data?.msg || 'Operation failed. Check server logs.';
             showMessage(errMsg, 'error');
@@ -342,8 +371,8 @@ const UserDashboard = () => {
         }
     };
 
-    const handleDelete = async (id, parentId) => {
-        console.log(id,parentId,"td")
+ const handleDelete = async (id, parentId) => {
+        // console.log(id,parentId,"td") // You can remove this console.log after testing
         if (!id || !parentId) {
             showMessage("Error: Missing Item ID or Parent ID for deletion.", 'error');
             return;
@@ -351,13 +380,28 @@ const UserDashboard = () => {
 
         if (window.confirm(`Are you sure you want to permanently delete hardware item ID ${id} from record ${parentId}?`)) {
             try {
+                // 1. Perform the DELETE request to the API
                 await axios.delete(`${backend_Url}/api/user/hardware/${parentId}/${id}`, config);
-                await showMessage(`Hardware item ID: ${id} deleted successfully. 🗑️`, 'success');
-                await fetchHardwareRecords();
+                
+                // 2. SUCCESS: Update local state (hardwareRecords) immediately
+                //    Filter out the record with the matching 'id' from the list
+                setHardwareRecords(prevRecords => 
+                    prevRecords.filter(record => record._id !== id)
+                );
+
+                // 3. Show success message
+                showMessage(`Hardware item ID: ${id} deleted successfully. 🗑️`, 'success');
+                
+                // 4. *** CRITICAL CHANGE: REMOVED THE LINE BELOW ***
+                // await fetchHardwareRecords(); // <-- This line is what we are removing to prevent the call to /allhardware
+                
             } catch (err) {
                 const errMsg = err.response?.data?.msg || 'Failed to delete record. Check API path or server logs.';
                 showMessage(errMsg, 'error');
-                await fetchHardwareRecords();
+                
+                // OPTIONAL: Re-fetch if deletion fails to ensure data consistency
+                // If you are confident in your API, you can skip the re-fetch even on error.
+                // fetchHardwareRecords(userCourtStation); // or just fetchHardwareRecords();
             }
         }
     };

@@ -89,7 +89,7 @@ const HardwareSchema = new mongoose.Schema({
 });
 
 // IMPORTANT: Ensure serial numbers are unique across all documents.
-HardwareSchema.index({ 'items.serialNo': 1 }, { unique: true, sparse: true });
+// HardwareSchema.index({ 'items.serialNo': 1 }, { unique: true, sparse: true });
 
 
 module.exports = mongoose.model('Hardware', HardwareSchema);
