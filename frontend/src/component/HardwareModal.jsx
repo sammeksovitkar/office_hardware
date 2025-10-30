@@ -10,7 +10,7 @@ const court_List = rawStations
     .map(s => s.trim())
     .filter(s => s.length > 0);
 const COURT_STATIONS = process.env.COURT_STATIONS ? process.env.COURT_STATIONS.split(',').map(s => s.trim()).filter(s => s.length > 0) : court_List;
-const HARDWARE_OPTIONS = ['CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'Other'];
+const HARDWARE_OPTIONS = ['CPU', 'Monitor', 'Keyboard', 'Mouse', 'LCD', 'Scanner', 'Printer', 'ALL IN ONE PC','Other'];
 const MANUFACTURER_OPTIONS = ["DELL", "HP", "SAMSUNG", "LENOVO","CANON","KYOCERA"];
 const SOURCE_OPTIONS = ["HIGHCOURT", "ECOURT PROJECT", "District Judge Office"];
 
