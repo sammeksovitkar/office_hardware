@@ -50,12 +50,12 @@ const HardwareSchema = new mongoose.Schema({
     // 4) Delivery Date
     deliveryDate: {
         type: Date,
-        required: [true, 'Delivery Date is required']
+        // required: [true, 'Delivery Date is required']
     },
     // 5) Installation Date
     installationDate: {
         type: Date,
-        required: [true, 'Installation Date is required']
+        // required: [true, 'Installation Date is required']
     },
     // 6) Dead Stock Reg. Sr.No
     deadStockRegSrNo: {
