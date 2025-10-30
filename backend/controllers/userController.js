@@ -476,7 +476,7 @@ exports.getUserHardware = async (req, res) => {
                 hardwareName: item.itemName, 
                 serialNumber: item.serialNo, 
                 courtName: record.courtName,
-                companyName: record.companyName,
+                model: record.model,
                 deliveryDate: record.deliveryDate,
                 installationDate: record.installationDate,
                 deadStockRegSrNo: record.deadStockRegSrNo,
